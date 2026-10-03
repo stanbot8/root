@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v6
       with:
         ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-          'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3' || 
+          'workflow_run') && '3dbcdc4a98d308e4f05e4f87c26366e06af8782d' || 
           github.sha }}
     - uses: actions/setup-node@v3
       with:
@@ -45,9 +45,9 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         AB_REPOSITORY: ${{ github.repository }}
         AB_RUN_ID: ${{ github.run_id }}
-        AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
+        AB_HEAD_SHA: 3dbcdc4a98d308e4f05e4f87c26366e06af8782d
         AB_WORKFLOW_DIGEST: 
-          de67b730d8dc7594749e0e636dd7155ab97f8962ed5eed31cdce24f9681f286f
+          70dc8e3b834b8fe8a9f1d6ac8ec22faf5ac3b279bc6d1b3c58a75d07c3fc45f1
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

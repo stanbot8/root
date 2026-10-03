@@ -103,7 +103,11 @@ TYPED_TEST(CPPINTEROP_TEST_MODE, FunctionReflection_GetClassMethods) {
   std::vector<Cpp::FuncRef> methods3;
   Cpp::GetClassMethods(Decls[4], methods3);
 
-  EXPECT_EQ(methods3.size(), 9);
+  // the parameterless default/copy/move constructors of B, though nominally
+  // inherited by the using declaration, are not exposed: C's own special
+  // members are authoritative (and the call layer refuses to invoke special
+  // members injected by a using declaration)
+  EXPECT_EQ(methods3.size(), 7);
   EXPECT_EQ(get_method_name(methods3[0]), "inline C::C()");
   EXPECT_EQ(get_method_name(methods3[1]), "inline constexpr C::C(const C &)");
   EXPECT_EQ(get_method_name(methods3[2]), "inline constexpr C::C(C &&)");
@@ -111,7 +115,6 @@ TYPED_TEST(CPPINTEROP_TEST_MODE, FunctionReflection_GetClassMethods) {
   EXPECT_EQ(get_method_name(methods3[4]), "inline C &C::operator=(C &&)");
   EXPECT_EQ(get_method_name(methods3[5]), "inline C::~C()");
   EXPECT_EQ(get_method_name(methods3[6]), "inline C::B(int)");
-  EXPECT_EQ(get_method_name(methods3[7]), "inline constexpr C::B(const B &)");
 
   // Should not crash.
   std::vector<Cpp::FuncRef> methods4;
@@ -314,6 +317,43 @@ TYPED_TEST(CPPINTEROP_TEST_MODE,
   Call.Invoke(&result, {args.data(), /*args_size=*/2}, object);
   EXPECT_EQ(result, (a * 100) + b);
 
+  Cpp::Destruct(object, Decls[1]);
+}
+
+// The wrapper spells the callee's return type. When that spelling runs through
+// a private member template, as RResultPtr<std::vector<T>>::begin() does with
+// RIterationHelper<T, true>::Iterator_t, the wrapper only compiles with access
+// control off, as cppyy-backend's TClingCallFunc always compiled it.
+TYPED_TEST(CPPINTEROP_TEST_MODE,
+           FunctionReflection_MakeFunctionCallable_PrivateReturnSpelling) {
+#ifdef EMSCRIPTEN
+  GTEST_SKIP() << "Test fails for Emscripten builds";
+#endif
+  if (TypeParam::isOutOfProcess)
+    GTEST_SKIP() << "Test fails for OOP JIT builds";
+
+  std::vector<Decl*> Decls;
+  std::string code = R"(
+    struct Value { int v; };
+    class Holder {
+      template <class V, bool B = true> struct Helper { using Value_t = void; };
+      template <class V> struct Helper<V, true> { using Value_t = V; };
+    public:
+      Helper<Value>::Value_t get() { return Value{42}; }
+    };
+    )";
+  GetAllTopLevelDecls(code, Decls, /*filter_implicitGenerated=*/false,
+                      /*interpreter_args=*/{"-include", "new"});
+
+  Cpp::JitCall Call = Cpp::MakeFunctionCallable(
+      Cpp::ConstFuncRef{Cpp::GetNamed("get", Decls[1]).data});
+  ASSERT_EQ(Call.getKind(), Cpp::JitCall::kGenericCall);
+
+  Cpp::ObjectRef object = Cpp::Construct(Decls[1]);
+  ASSERT_TRUE(object);
+  int result = 0;
+  Call.Invoke(&result, {}, object.data);
+  EXPECT_EQ(result, 42);
   Cpp::Destruct(object, Decls[1]);
 }
 
@@ -2693,6 +2733,40 @@ TYPED_TEST(CPPINTEROP_TEST_MODE,
 
   EXPECT_EQ(Cpp::GetFunctionSignature(func4),
             "template<> A<int> A<int>::operator-<int>(A<int> rhs)");
+}
+
+TYPED_TEST(CPPINTEROP_TEST_MODE,
+           FunctionReflection_TemplatedOperatorArrow) {
+  // Model of MSVC's std::shared_ptr::operator->, which is a member template
+  // with a defaulted template parameter (SFINAE-constrained on the element
+  // type). Smart-pointer detection has to instantiate it with no call
+  // arguments to determine the pointee type.
+  std::vector<Decl*> Decls;
+  std::string code = R"(
+    struct TheData { int fData; };
+    template <class T> struct SmartLike {
+      T* ptr;
+      template <class U = T> U* operator->() { return ptr; }
+    };
+    SmartLike<TheData> gSmart{nullptr};
+  )";
+  GetAllTopLevelDecls(code, Decls);
+
+  Cpp::DeclRef Scope =
+      Cpp::GetScopeFromType(Cpp::GetVariableType(Cpp::GetNamed("gSmart")));
+  ASSERT_TRUE(Scope.data);
+
+  std::vector<Cpp::FuncRef> ops;
+  Cpp::GetOperator(Scope, Cpp::Operator::OP_Arrow, ops);
+  ASSERT_EQ(ops.size(), 1);
+  EXPECT_TRUE(Cpp::IsTemplatedFunction(ops[0]));
+
+  Cpp::FuncRef Deref = Cpp::BestOverloadFunctionMatch(ops, {}, {});
+  ASSERT_TRUE(Deref);
+  // The match is an instantiation with the defaulted template parameter, not
+  // the template pattern itself: its return type is concrete.
+  EXPECT_EQ(Cpp::GetTypeAsString(Cpp::GetFunctionReturnType(Deref)),
+            "TheData *");
 }
 
 TYPED_TEST(CPPINTEROP_TEST_MODE,
@@ -5431,4 +5505,70 @@ TYPED_TEST(CPPINTEROP_TEST_MODE,
 
   EXPECT_EQ(ra, 7); // HeavyZero<1>::tls.id set by the NonTrivial ctor
   EXPECT_EQ(rb, 7);
+}
+
+// The wrapper spells the return type in its placement-new; a typedef nested
+// in a private member class is not spellable there (and, unlike a typedef of
+// a builtin, is not desugared by get_type_as_string), the canonical type is.
+TYPED_TEST(CPPINTEROP_TEST_MODE, FunctionReflection_PrivateTypedefReturn) {
+#ifdef EMSCRIPTEN
+  GTEST_SKIP() << "Test fails for Emscripten builds";
+#endif
+  if (TypeParam::isOutOfProcess)
+    GTEST_SKIP() << "Test fails for OOP JIT builds";
+
+  std::vector<Decl*> Decls;
+  std::string code = R"(
+    struct Obj {};
+    struct Res {
+    private:
+      struct Helper { typedef Obj Iterator_t; };
+    public:
+      Helper::Iterator_t get() { return {}; }
+    };
+  )";
+
+  GetAllTopLevelDecls(code, Decls, /*filter_implicitGenerated=*/false,
+                      /*interpreter_args=*/{"-include", "new"});
+  ASSERT_EQ(Decls.size(), 2);
+  auto Fns = Cpp::GetFunctionsUsingName(Decls[1], "get");
+  ASSERT_EQ(Fns.size(), 1);
+  EXPECT_EQ(Cpp::MakeFunctionCallable(Fns[0]).getKind(),
+            Cpp::JitCall::kGenericCall);
+}
+
+// decltype sugar is spelled as its expression: a call in it keeps its
+// qualifier as written (detail::helper), which does not resolve at file scope;
+// the canonical type is spellable. A typedef of a class type underneath keeps
+// the sugar from being desugared when the type is printed (a builtin would be).
+TYPED_TEST(CPPINTEROP_TEST_MODE, FunctionReflection_DecltypeReturn) {
+#ifdef EMSCRIPTEN
+  GTEST_SKIP() << "Test fails for Emscripten builds";
+#endif
+  if (TypeParam::isOutOfProcess)
+    GTEST_SKIP() << "Test fails for OOP JIT builds";
+
+  std::vector<Decl*> Decls;
+  std::string code = R"(
+    namespace ns {
+      namespace detail { inline int helper() { return 0; } }
+      struct Obj { int v; };
+      typedef Obj Res;
+      auto get(int i) -> decltype(detail::helper(), Res()) { return Res{7 * i}; }
+    }
+  )";
+
+  GetAllTopLevelDecls(code, Decls, /*filter_implicitGenerated=*/false,
+                      /*interpreter_args=*/{"-include", "new"});
+  ASSERT_EQ(Decls.size(), 1);
+  auto Fns = Cpp::GetFunctionsUsingName(Decls[0], "get");
+  ASSERT_EQ(Fns.size(), 1);
+  Cpp::JitCall JC = Cpp::MakeFunctionCallable(Fns[0]);
+  ASSERT_EQ(JC.getKind(), Cpp::JitCall::kGenericCall);
+
+  int i = 3;
+  struct { int v; } result = {0};
+  std::array<void*, 1> args = {(void*)&i};
+  JC.Invoke(&result, {args.data(), /*args_size=*/1}, /*self=*/nullptr);
+  EXPECT_EQ(result.v, 21);
 }
