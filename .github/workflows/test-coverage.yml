@@ -12,7 +12,6 @@ on:
     paths-ignore:
     - doc/**
     - documentation/**
-
   workflow_call:
     inputs:
       head_ref:
@@ -80,7 +79,6 @@ jobs:
     - linux
     - x64
     - cpu
-
     name: Build and test to determine coverage
 
     env:
@@ -98,6 +96,12 @@ jobs:
       INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 'clean
         build') }}
 
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
     container:
       image: registry.cern.ch/root-ci/alma10:buildready
       options: --security-opt label=disable --rm
@@ -151,28 +155,32 @@ jobs:
       if: github.event_name == 'pull_request'
       env:
         GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-      run: '.github/workflows/root-ci-config/build_root.py --buildtype      Debug
+      run: ".github/workflows/root-ci-config/build_root.py --buildtype      Debug
         --platform       alma10 --incremental    $INCREMENTAL --coverage       true
-        --base_ref       ${{ github.base_ref }} --sha            ${{ github.sha }}
-        --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{
+        --base_ref       ${{ github.base_ref }} --sha            ${{ (github.event_name
+        == 'schedule' && '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha)
+        }} --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{
         github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha
-        }} --repository     ${{ github.server_url }}/${{ github.repository }} '
+        }} --repository     ${{ github.server_url }}/${{ github.repository }} "
 
     - name: Workflow dispatch
       if: github.event_name == 'workflow_dispatch'
-      run: '.github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries
-        }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental    ${{
-        inputs.incremental }} --coverage       true --base_ref       ${{ inputs.base_ref
-        }} --sha            ${{ github.sha }} --head_ref       ${{ inputs.head_ref
-        }} --head_sha       ${{ inputs.head_ref }} --repository     ${{ github.server_url
-        }}/${{ github.repository }} '
+      run: ".github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries
+        }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental\
+        \    ${{ inputs.incremental }} --coverage       true --base_ref       ${{
+        inputs.base_ref }} --sha            ${{ (github.event_name == 'schedule' &&
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha) }} --head_ref  \
+        \     ${{ inputs.head_ref }} --head_sha       ${{ inputs.head_ref }} --repository\
+        \     ${{ github.server_url }}/${{ github.repository }} "
 
     - name: Nightly build
       if: github.event_name == 'schedule'
-      run: '.github/workflows/root-ci-config/build_root.py --buildtype      Debug
-        --platform       alma10 --incremental    false --coverage       true --base_ref       ${{
-        github.ref_name }} --sha            ${{ github.sha }} --repository     ${{
-        github.server_url }}/${{ github.repository }} '
+      run: ".github/workflows/root-ci-config/build_root.py --buildtype      Debug
+        --platform       alma10 --incremental    false --coverage       true --base_ref\
+        \       ${{ (github.event_name == 'schedule' && 'master' || github.ref_name)
+        }} --sha            ${{ (github.event_name == 'schedule' && '8264b7869a3f2c70eb113a602c249e07d0964db3'
+        || github.sha) }} --repository     ${{ github.server_url }}/${{ github.repository
+        }} "
 
     - name: Upload coverage to Codecov
       if: ${{ !cancelled() }}
@@ -207,7 +215,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          b8e2acc3bf5db57f09ac2dfaae4eb86eb955d58ea3f90c2d283a41458ded7230
+          03cad9ffd00e4537cfc36fa63606d995a104f5eaea7214a7811b9c76217f66af
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

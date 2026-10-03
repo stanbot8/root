@@ -24,7 +24,6 @@ jobs:
     - windows
     - x64
     - latest
-
     steps:
     - name: Display Update Log - Visual Studio Latest
       shell: cmd
@@ -58,6 +57,13 @@ jobs:
         name: Test Results - Visual Studio Latest
         path: C:/ROOT-CI/build/TestResults.xml
 
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
     needs:
     - alpha_bridge_inputs
   alpha_bridge_inputs:
@@ -81,7 +87,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          2ce6c7f1097aba75fb26bea18e8869c97ca2174ed05e31475cf9c668522ba4d7
+          11e9d0caa772b7abfc7c26f351d15c0075338e9e9b42ebbecef44c94314c1e9d
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

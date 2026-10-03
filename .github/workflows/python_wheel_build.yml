@@ -12,7 +12,10 @@ on:
   schedule:
   - cron: 01 1 * * *
   pull_request:
-    types: [synchronize, reopened, labeled]
+    types:
+    - synchronize
+    - reopened
+    - labeled
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || 
@@ -30,10 +33,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: [cp311, cp312, cp313, cp314]
-        config:
-          # `label` is a unique artifact name for each build
-        - runner: macos-15
+        python:
+        - cp311
+        - cp312
+        - cp313
+        - cp314
+        config: -
+          runner: macos-15
           platform: macosx_arm64
           label: macosx_arm64
           deployment_target: '15.0'
@@ -77,6 +83,13 @@ jobs:
         artifact-name: ${{ matrix.python }}-${{ matrix.config.label }}-${{ 
           matrix.config.runner }}
 
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
     needs:
     - alpha_bridge_inputs
   test-wheels:
@@ -87,10 +100,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ['3.11', '3.12', '3.13', '3.14']
-        test_config:
-          # each runner tests the wheel built on it
-        - runner: macos-15
+        python:
+        - '3.11'
+        - '3.12'
+        - '3.13'
+        - '3.14'
+        test_config: -
+          runner: macos-15
           build_label: macosx_arm64
         - runner: macos-26
           build_label: macosx_arm64
@@ -139,6 +155,13 @@ jobs:
       run: |
         pytest -vv --verbosity="4" -rF test/wheels
 
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
     if: ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' 
       }}
   create-and-upload-wheel-registry:
@@ -148,9 +171,8 @@ jobs:
     - test-wheels
     - alpha_bridge_inputs
     runs-on: ubuntu-latest
-    steps:
-
-    - name: Download produced wheels
+    steps: -
+      name: Download produced wheels
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
@@ -195,6 +217,13 @@ jobs:
         echo +++ Running the copy
         xrdcp --parallel ${NFILES} -rf wheelhouse/* ${EOS_ENDPOINT}/${EOS_PATH}/
 
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
   publish-to-pypi:
     if: ${{ (github.event_name == 'workflow_dispatch') && 
       needs.alpha_bridge_inputs.outputs.changed == 'true' }}
@@ -217,6 +246,13 @@ jobs:
         path: dist/
     - name: Publish distribution to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
   alpha_bridge_inputs:
     name: AlphaBridge input check
     runs-on: ubuntu-latest
@@ -238,7 +274,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          5d50f83743079d8c15660c09bf6127413bdffb235c10550f8819a0e0d1040939
+          76e64bc445be34eac4cea0de63c14c03c573941e968d103ccf99d54de3ea2b04
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

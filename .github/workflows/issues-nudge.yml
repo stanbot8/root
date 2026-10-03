@@ -1,8 +1,7 @@
 name: Daily nudge about closed issues without a project
 on:
-  schedule:
-    # Run every weekday at 6:00 UTC (7:00 or 8:00 CERN)
-  - cron: 0 6 * * MON-FRI
+  schedule: -
+    cron: 0 6 * * MON-FRI
 
 jobs:
   issues-nudge:
@@ -11,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        ref: ${{ github.event_name == 'schedule' && 
+          '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
     - uses: actions/setup-node@v3
       with:
         node-version: '20'
@@ -18,6 +20,13 @@ jobs:
     - run: node .github/actions/issues-nudge.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      ALPHA_BRIDGE_SOURCE_SHA: ${{ github.event_name == 'schedule' && 
+        '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha }}
+      ALPHA_BRIDGE_SOURCE_REF: ${{ github.event_name == 'schedule' && 
+        'refs/heads/master' || github.ref }}
+      ALPHA_BRIDGE_SOURCE_REF_NAME: ${{ github.event_name == 'schedule' && 
+        'master' || github.ref_name }}
     needs:
     - alpha_bridge_inputs
   alpha_bridge_inputs:
@@ -41,7 +50,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          22abd9c2a06fce0c11ed7f84aea90f5dd6a84597fccdfbfda12a73a858dc62f5
+          8bb8547a88bb3f2abf5f8ea3793be8496441cac5faebb6e5788a9d447a2c7807
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}
