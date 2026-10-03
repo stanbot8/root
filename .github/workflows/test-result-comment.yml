@@ -3,8 +3,7 @@ name: Test Summary PR comment
 on:
   workflow_run:
     # do NOT use quotes: https://stackoverflow.com/a/72551795/17876693
-    workflows:
-    - ROOT CI
+    workflows: [ROOT CI]
     types:
     - completed
 permissions: {}
@@ -71,7 +70,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          c936690fa8f1c26b9ce001142a9c79a834ae52d6f881c8495b5dd7728c7576a2
+          3fe2ef18f66c4f8f462edf0d400e48528cd0613ca516dbc0f271043fd4454534
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

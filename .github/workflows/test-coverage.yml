@@ -12,6 +12,7 @@ on:
     paths-ignore:
     - doc/**
     - documentation/**
+
   workflow_call:
     inputs:
       head_ref:
@@ -79,6 +80,7 @@ jobs:
     - linux
     - x64
     - cpu
+
     name: Build and test to determine coverage
 
     env:
@@ -105,12 +107,15 @@ jobs:
         # if the `if` expr is false, `if` still has exit code 0.
         # if the `if` block is entered, the block's exit code becomes the exit
         # code of the `if`.
-      run: if [ -d /py-venv/ROOT-CI/bin/ ]; then . /py-venv/ROOT-CI/bin/activate
-        && echo PATH=$PATH >> $GITHUB_ENV; fi
+      run: |-
+        if [ -d /py-venv/ROOT-CI/bin/ ]; then . /py-venv/ROOT-CI/bin/activate && echo PATH=$PATH >> $GITHUB_ENV; fi
+
 
       # This should be part of the container image
     - name: Install gcovr
-      run: pip3 install "gcovr<8.4"
+      run: |-
+        pip3 install "gcovr<8.4"
+
 
       # This checks out the merge commit if this is a PR
     - name: Checkout
@@ -131,7 +136,9 @@ jobs:
         echo "$ENV_CONTEXT"
 
     - name: Print debug info
-      run: 'printf "%s@%s\\n" "$(whoami)" "$(hostname)"; ls -la '
+      run: |-
+        printf "%s@%s\\n" "$(whoami)" "$(hostname)"; ls -la 
+
 
     - name: Apply option override from matrix for this job
       env:
@@ -149,34 +156,21 @@ jobs:
       if: github.event_name == 'pull_request'
       env:
         GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-      run: ".github/workflows/root-ci-config/build_root.py --buildtype      Debug
-        --platform       alma10 --incremental    $INCREMENTAL --coverage       true
-        --base_ref       ${{ github.base_ref }} --sha            ${{ ((github.event_name
-        == 'schedule' || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3'
-        || github.sha) }} --head_ref       refs/pull/${{ github.event.pull_request.number
-        }}/head:${{ github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha
-        }} --repository     ${{ github.server_url }}/${{ github.repository }} "
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    $INCREMENTAL --coverage       true --base_ref       ${{ github.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha) }} --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+
 
     - name: Workflow dispatch
       if: github.event_name == 'workflow_dispatch'
-      run: ".github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries
-        }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental\
-        \    ${{ inputs.incremental }} --coverage       true --base_ref       ${{
-        inputs.base_ref }} --sha            ${{ ((github.event_name == 'schedule'
-        || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3'
-        || github.sha) }} --head_ref       ${{ inputs.head_ref }} --head_sha     \
-        \  ${{ inputs.head_ref }} --repository     ${{ github.server_url }}/${{ github.repository
-        }} "
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental    ${{ inputs.incremental }} --coverage       true --base_ref       ${{ inputs.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha) }} --head_ref       ${{ inputs.head_ref }} --head_sha       ${{ inputs.head_ref }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+
 
     - name: Nightly build
       if: github.event_name == 'schedule'
-      run: ".github/workflows/root-ci-config/build_root.py --buildtype      Debug
-        --platform       alma10 --incremental    false --coverage       true --base_ref\
-        \       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run')
-        && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name
-        == 'schedule' || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3'
-        || github.sha) }} --repository     ${{ github.server_url }}/${{ github.repository
-        }} "
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    false --coverage       true --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '8264b7869a3f2c70eb113a602c249e07d0964db3' || github.sha) }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+
 
     - name: Upload coverage to Codecov
       if: ${{ !cancelled() }}
@@ -211,7 +205,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          9308b1eedabdb63467b347ecdfc0b5d245737332b70fa0a4bb40b7cfb9123b9f
+          a9f05e0a46d9f3f8ee664159d2905b99fd4ee508f7d2114cf31f7f40865ba10b
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

@@ -1,7 +1,8 @@
 name: Daily nudge about closed issues without a project
 on:
-  schedule: -
-    cron: 0 6 * * MON-FRI
+  schedule:
+    # Run every weekday at 6:00 UTC (7:00 or 8:00 CERN)
+  - cron: 0 6 * * MON-FRI
 
 jobs:
   issues-nudge:
@@ -17,8 +18,10 @@ jobs:
     - uses: actions/setup-node@v3
       with:
         node-version: '20'
-    - run: npm install 'octokit@^3'
-    - run: node .github/actions/issues-nudge.js
+    - run: |-
+        npm install 'octokit@^3'
+    - run: |-
+        node .github/actions/issues-nudge.js
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     needs:
@@ -44,7 +47,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          f810776ea69f5f22f3105f58c2a1b9e0975113a80d1061f0f0c981917c2784e3
+          de67b730d8dc7594749e0e636dd7155ab97f8962ed5eed31cdce24f9681f286f
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

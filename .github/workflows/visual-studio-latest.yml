@@ -24,6 +24,7 @@ jobs:
     - windows
     - x64
     - latest
+
     steps:
     - name: Display Update Log - Visual Studio Latest
       shell: cmd
@@ -44,11 +45,9 @@ jobs:
     - name: Build after VS update
       if: ${{ !cancelled() }}
       shell: cmd
-      run: C:\setenv.bat x64 && python 
-        .github/workflows/root-ci-config/build_root.py --buildtype        
-        Release --platform         windows10 --incremental      false --binaries         
-        false --upload_artifacts false --base_ref         master --repository       
-        ${{ github.server_url }}/${{ github.repository }} --architecture     x64
+      run: |-
+        C:\setenv.bat x64 && python .github/workflows/root-ci-config/build_root.py --buildtype        Release --platform         windows10 --incremental      false --binaries         false --upload_artifacts false --base_ref         master --repository       ${{ github.server_url }}/${{ github.repository }} --architecture     x64
+
 
     - name: Upload test results
       if: ${{ !cancelled() }}
@@ -80,7 +79,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          feada537681f00a048a9502737164e4f6f3472aed647415f1d80d54622a5da2c
+          d8552822d1d7ccd3a74b070465f1ab9b05411e5f0532e71e4b4cac807995c8c2
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

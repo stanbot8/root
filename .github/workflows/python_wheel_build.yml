@@ -12,10 +12,7 @@ on:
   schedule:
   - cron: 01 1 * * *
   pull_request:
-    types:
-    - synchronize
-    - reopened
-    - labeled
+    types: [synchronize, reopened, labeled]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || 
@@ -34,13 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python:
-        - cp311
-        - cp312
-        - cp313
-        - cp314
-        config: -
-          runner: macos-15
+        python: [cp311, cp312, cp313, cp314]
+        config:
+          # `label` is a unique artifact name for each build
+        - runner: macos-15
           platform: macosx_arm64
           label: macosx_arm64
           deployment_target: '15.0'
@@ -94,13 +88,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python:
-        - '3.11'
-        - '3.12'
-        - '3.13'
-        - '3.14'
-        test_config: -
-          runner: macos-15
+        python: ['3.11', '3.12', '3.13', '3.14']
+        test_config:
+          # each runner tests the wheel built on it
+        - runner: macos-15
           build_label: macosx_arm64
         - runner: macos-26
           build_label: macosx_arm64
@@ -158,8 +149,9 @@ jobs:
     - test-wheels
     - alpha_bridge_inputs
     runs-on: ubuntu-latest
-    steps: -
-      name: Download produced wheels
+    steps:
+
+    - name: Download produced wheels
       uses: actions/download-artifact@v4
       with:
         merge-multiple: true
@@ -182,8 +174,9 @@ jobs:
 
     - name: Compute number of files to upload
       id: nfiles
-      run: echo "NFILES=$(find wheelhouse -maxdepth 1 | wc -l)" >> 
-        "$GITHUB_OUTPUT"
+      run: |-
+        echo "NFILES=$(find wheelhouse -maxdepth 1 | wc -l)" >> "$GITHUB_OUTPUT"
+
 
     - name: Upload wheels to EOS
       env:
@@ -247,7 +240,7 @@ jobs:
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: 8264b7869a3f2c70eb113a602c249e07d0964db3
         AB_WORKFLOW_DIGEST: 
-          b5c5820565604bae2429e2d214881e41becaf40e3357d9899604fd3081024cb1
+          be54a4a84f42f0ffb35253b95811472d19966174a21ac7c7024190040c16e13c
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}
