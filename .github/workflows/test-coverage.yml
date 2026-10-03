@@ -1,18 +1,17 @@
-
-name: 'Test Coverage'
+name: Test Coverage
 
 on:
   schedule:
-    - cron: '0 1 * * *'
+  - cron: 0 1 * * *
 
   # https://github.com/root-project/root/pull/12112#issuecomment-1411004278
   # DISABLED: takes 4 hours! Might clang-coverage be a solution?
   pull_request:
     branches:
-      - '**'
+    - '**'
     paths-ignore:
-      - 'doc/**'
-      - 'documentation/**'
+    - doc/**
+    - documentation/**
 
   workflow_call:
     inputs:
@@ -37,12 +36,12 @@ on:
         required: true
         default: master
       base_ref:
-        description: ... to ... (can have same value)
+        description: '... to ... (can have same value)'
         type: string
         required: true
         default: master
       incremental:
-        description: 'Do incremental build'
+        description: Do incremental build
         type: boolean
         required: true
         default: true
@@ -68,135 +67,193 @@ env:
 jobs:
 
   build-linux:
-    if: |
-        ( !(contains(github.event.pull_request.title, '[skip-ci]') || contains(github.event.pull_request.title, '[skip ci]')) )
-        && ( ( github.repository_owner == 'root-project' && github.event_name != 'pull_request' )
-             || ( github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test coverage') ) )
+    if: |-
+      ${{ (( !(contains(github.event.pull_request.title, '[skip-ci]') || contains(github.event.pull_request.title, '[skip ci]')) )
+      && ( ( github.repository_owner == 'root-project' && github.event_name != 'pull_request' )
+           || ( github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'test coverage') ) )) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
 
     permissions:
       contents: read
 
     runs-on:
-      - self-hosted
-      - linux
-      - x64
-      - cpu
+    - self-hosted
+    - linux
+    - x64
+    - cpu
 
     name: Build and test to determine coverage
 
     env:
       PYTHONUNBUFFERED: true
-      OS_APPLICATION_CREDENTIAL_ID: '7f5b64a265244623a3a933308569bdba'
-      OS_APPLICATION_CREDENTIAL_SECRET: ${{ secrets.OS_APPLICATION_CREDENTIAL_SECRET }}
-      OS_AUTH_TYPE: 'v3applicationcredential'
-      OS_AUTH_URL: 'https://keystone.cern.ch/v3'
+      OS_APPLICATION_CREDENTIAL_ID: 7f5b64a265244623a3a933308569bdba
+      OS_APPLICATION_CREDENTIAL_SECRET: ${{ 
+        secrets.OS_APPLICATION_CREDENTIAL_SECRET }}
+      OS_AUTH_TYPE: v3applicationcredential
+      OS_AUTH_URL: https://keystone.cern.ch/v3
       OS_IDENTITY_API_VERSION: 3
-      OS_INTERFACE: 'public'
-      OS_REGION_NAME: 'cern'
+      OS_INTERFACE: public
+      OS_REGION_NAME: cern
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 'clean build') }}
+      INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 'clean
+        build') }}
 
     container:
       image: registry.cern.ch/root-ci/alma10:buildready
-      options: '--security-opt label=disable --rm'
+      options: --security-opt label=disable --rm
 
     steps:
-      - name: Set up Python Virtual Env
+    - name: Set up Python Virtual Env
         # if the `if` expr is false, `if` still has exit code 0.
         # if the `if` block is entered, the block's exit code becomes the exit
         # code of the `if`.
-        run: 'if [ -d /py-venv/ROOT-CI/bin/ ]; then . /py-venv/ROOT-CI/bin/activate && echo PATH=$PATH >> $GITHUB_ENV; fi'
+      run: if [ -d /py-venv/ROOT-CI/bin/ ]; then . /py-venv/ROOT-CI/bin/activate
+        && echo PATH=$PATH >> $GITHUB_ENV; fi
 
       # This should be part of the container image
-      - name: Install gcovr
-        run: pip3 install "gcovr<8.4"
+    - name: Install gcovr
+      run: pip3 install "gcovr<8.4"
 
       # This checks out the merge commit if this is a PR
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref_name }}
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref_name }}
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-          JOB_CONTEXT: ${{ toJSON(job) }}
-          ENV_CONTEXT: ${{ toJSON(env) }}
-        run: |
-          echo "$GITHUB_CONTEXT"
-          echo "--------------------------"
-          echo "$JOB_CONTEXT"
-          echo "--------------------------"
-          echo "$ENV_CONTEXT"
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+        JOB_CONTEXT: ${{ toJSON(job) }}
+        ENV_CONTEXT: ${{ toJSON(env) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
+        echo "--------------------------"
+        echo "$JOB_CONTEXT"
+        echo "--------------------------"
+        echo "$ENV_CONTEXT"
 
-      - name: Print debug info
-        run:  'printf "%s@%s\\n" "$(whoami)" "$(hostname)";
-               ls -la
-              '
+    - name: Print debug info
+      run: 'printf "%s@%s\\n" "$(whoami)" "$(hostname)"; ls -la '
 
-      - name: Apply option override from matrix for this job
-        env:
-          OVERRIDE: "coverage=ON"
-          FILE: .github/workflows/root-ci-config/buildconfig/alma10.txt
-        shell: bash
-        run: |
-          set -x
+    - name: Apply option override from matrix for this job
+      env:
+        OVERRIDE: coverage=ON
+        FILE: .github/workflows/root-ci-config/buildconfig/alma10.txt
+      shell: bash
+      run: |
+        set -x
 
-          echo '' >> "$FILE"
-          echo $OVERRIDE >> "$FILE"
-          cat "$FILE" || true
+        echo '' >> "$FILE"
+        echo $OVERRIDE >> "$FILE"
+        cat "$FILE" || true
 
-      - name: Pull Request Build
-        if: github.event_name == 'pull_request'
-        env:
-          GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype      Debug
-                    --platform       alma10
-                    --incremental    $INCREMENTAL
-                    --coverage       true
-                    --base_ref       ${{ github.base_ref }}
-                    --sha            ${{ github.sha }}
-                    --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}
-                    --head_sha       ${{ github.event.pull_request.head.sha }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-              "
+    - name: Pull Request Build
+      if: github.event_name == 'pull_request'
+      env:
+        GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
+      run: '.github/workflows/root-ci-config/build_root.py --buildtype      Debug
+        --platform       alma10 --incremental    $INCREMENTAL --coverage       true
+        --base_ref       ${{ github.base_ref }} --sha            ${{ github.sha }}
+        --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{
+        github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha
+        }} --repository     ${{ github.server_url }}/${{ github.repository }} '
 
-      - name: Workflow dispatch
-        if:   github.event_name == 'workflow_dispatch'
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --binaries       ${{ inputs.binaries }}
-                    --buildtype      ${{ inputs.buildtype }}
-                    --platform       alma10
-                    --incremental    ${{ inputs.incremental }}
-                    --coverage       true
-                    --base_ref       ${{ inputs.base_ref }}
-                    --sha            ${{ github.sha }}
-                    --head_ref       ${{ inputs.head_ref }}
-                    --head_sha       ${{ inputs.head_ref }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-              "
+    - name: Workflow dispatch
+      if: github.event_name == 'workflow_dispatch'
+      run: '.github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries
+        }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental    ${{
+        inputs.incremental }} --coverage       true --base_ref       ${{ inputs.base_ref
+        }} --sha            ${{ github.sha }} --head_ref       ${{ inputs.head_ref
+        }} --head_sha       ${{ inputs.head_ref }} --repository     ${{ github.server_url
+        }}/${{ github.repository }} '
 
-      - name: Nightly build
-        if:   github.event_name == 'schedule'
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype      Debug
-                    --platform       alma10
-                    --incremental    false
-                    --coverage       true
-                    --base_ref       ${{ github.ref_name }}
-                    --sha            ${{ github.sha }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-              "
+    - name: Nightly build
+      if: github.event_name == 'schedule'
+      run: '.github/workflows/root-ci-config/build_root.py --buildtype      Debug
+        --platform       alma10 --incremental    false --coverage       true --base_ref       ${{
+        github.ref_name }} --sha            ${{ github.sha }} --repository     ${{
+        github.server_url }}/${{ github.repository }} '
 
-      - name: Upload coverage to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@v5
-        with:
-          env_vars: OS,PYTHON
-          fail_ci_if_error: true
-          files: /github/home/ROOT-CI/build/cobertura-cov.xml
-          flags: unittests
-          name: codecov-umbrella
-          verbose: true
+    - name: Upload coverage to Codecov
+      if: ${{ !cancelled() }}
+      uses: codecov/codecov-action@v5
+      with:
+        env_vars: OS,PYTHON
+        fail_ci_if_error: true
+        files: /github/home/ROOT-CI/build/cobertura-cov.xml
+        flags: unittests
+        name: codecov-umbrella
+        verbose: true
+    needs:
+    - alpha_bridge_inputs
+  alpha_bridge_inputs:
+    name: AlphaBridge input check
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    concurrency:
+      group: alpha-bridge-inputs-${{ github.workflow }}-${{ github.sha }}-${{ 
+        github.event.schedule || github.event_name }}
+      cancel-in-progress: false
+    outputs:
+      changed: ${{ steps.identity.outputs.changed }}
+    steps:
+    - id: identity
+      name: Check source, workflow, variables, and runner inputs
+      env:
+        GH_TOKEN: ${{ github.token }}
+        AB_REPOSITORY: ${{ github.repository }}
+        AB_RUN_ID: ${{ github.run_id }}
+        AB_HEAD_SHA: ${{ github.sha }}
+        AB_EVENT: ${{ github.event_name }}
+        AB_SCHEDULE: ${{ github.event.schedule || '' }}
+        AB_VARIABLES: ${{ toJSON(vars) }}
+        AB_INPUTS: ${{ toJSON(inputs) }}
+      shell: bash
+      run: "python3 - <<'ALPHA_BRIDGE_CI_PY'\n\"\"\"Native scheduled-CI input check,
+        embedded in the owned fork configuration.\"\"\"\n\nfrom __future__ import
+        annotations\n\nimport hashlib\nimport json\nimport os\nimport urllib.parse\n\
+        import urllib.request\n\n\ndef changed(get, *, repository, run_id, identity,
+        job_name):\n    current = get(f\"/repos/{repository}/actions/runs/{run_id}\"\
+        )\n    event = current[\"event\"]\n    query = urllib.parse.urlencode(\n \
+        \       {\n            \"head_sha\": current[\"head_sha\"],\n            \"\
+        event\": event,\n            \"per_page\": 100,\n        }\n    )\n    runs
+        = get(f\"/repos/{repository}/actions/workflows/{current['workflow_id']}/runs?{query}\"\
+        )\n    for run in runs[\"workflow_runs\"]:\n        if run[\"id\"] == run_id:\n\
+        \            continue\n        if run.get(\"head_sha\") != current[\"head_sha\"\
+        ] or run.get(\"event\") != event:\n            raise ValueError(\"provider
+        returned a different CI input identity\")\n        page = 1\n        while
+        True:\n            jobs = get(\n                f\"/repos/{repository}/actions/runs/{run['id']}/jobs?per_page=100&page={page}\"\
+        \n            )[\"jobs\"]\n            for job in jobs:\n                if
+        (\n                    job[\"name\"] == job_name\n                    and
+        job.get(\"status\") == \"completed\"\n                    and job.get(\"conclusion\"\
+        ) == \"success\"\n                    and any(\n                        step[\"\
+        name\"] == f\"AlphaBridge input identity {identity}\"\n                  \
+        \      and step.get(\"conclusion\") == \"success\"\n                     \
+        \   for step in job.get(\"steps\", [])\n                    )\n          \
+        \      ):\n                    return False\n            if len(jobs) < 100:\n\
+        \                break\n            page += 1\n    return True\n\n\ndef main():\n\
+        \    inputs = {\n        \"configuration_commit\": os.environ[\"AB_HEAD_SHA\"\
+        ],\n        \"event\": os.environ[\"AB_EVENT\"],\n        \"schedule\": os.environ[\"\
+        AB_SCHEDULE\"],\n        \"variables\": json.loads(os.environ[\"AB_VARIABLES\"\
+        ]),\n        \"inputs\": json.loads(os.environ[\"AB_INPUTS\"]),\n        \"\
+        runner_image\": [os.environ.get(\"ImageOS\", \"\"), os.environ.get(\"ImageVersion\"\
+        , \"\")],\n    }\n    identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()\n\
+        \n    def get(path):\n        request = urllib.request.Request(\n        \
+        \    \"https://api.github.com\" + path,\n            headers={\n         \
+        \       \"Authorization\": \"Bearer \" + os.environ[\"GH_TOKEN\"],\n     \
+        \           \"Accept\": \"application/vnd.github+json\",\n               \
+        \ \"X-GitHub-Api-Version\": \"2026-03-10\",\n            },\n        )\n \
+        \       with urllib.request.urlopen(request, timeout=60) as response:\n  \
+        \          return json.load(response)\n\n    should_run = inputs[\"event\"\
+        ] != \"schedule\" or changed(\n        get,\n        repository=os.environ[\"\
+        AB_REPOSITORY\"],\n        run_id=int(os.environ[\"AB_RUN_ID\"]),\n      \
+        \  identity=identity,\n        job_name=\"AlphaBridge input check\",\n   \
+        \ )\n    with open(os.environ[\"GITHUB_OUTPUT\"], \"a\", encoding=\"utf-8\"\
+        ) as output:\n        output.write(f\"digest={identity}\\nchanged={str(should_run).lower()}\\\
+        n\")\n    print(\"CI inputs changed\" if should_run else \"CI inputs unchanged;
+        build and test jobs skipped\")\n\n\nif __name__ == \"__main__\":\n    main()\n\
+        \nALPHA_BRIDGE_CI_PY\n"
+    - name: AlphaBridge input identity ${{ steps.identity.outputs.digest }}
+      run: echo 'Input identity recorded'

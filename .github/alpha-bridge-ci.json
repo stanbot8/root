@@ -1,0 +1,47 @@
+{
+  "definition_blob_sha1": {
+    ".github/workflows/alpha-bridge-ci-verify.yml": "0588ba302e7a97a9721ae7494f6b9aca053476b6",
+    ".github/workflows/issues-nudge.yml": "b3e532ab30225bbcfd611e78fe91a8e43ba8b733",
+    ".github/workflows/python_wheel_build.yml": "aba0d5c3af50710bd77aa04b62bca4090ccebb3c",
+    ".github/workflows/root-640.yml": "8e1f642599ec74fce8fbc2ac2c1bcca06c0a23b3",
+    ".github/workflows/root-docs-schedule.yml": "6d8f098625ff04959fa585bb936085aadac076d5",
+    ".github/workflows/root-master.yml": "68d428369ca1b92ae83d796412cfcc36a190a390",
+    ".github/workflows/root-nightlies-active.yml": "ed6452407abe8f3a20f5fa0ff52e3d8f0e6a5d76",
+    ".github/workflows/root-nightlies-maintenance.yml": "a490928a4c0d8e5561c54d6643095238e7abba17",
+    ".github/workflows/test-coverage.yml": "db7a8047e2f46fe77a3674231e97f948369b9ec2",
+    ".github/workflows/visual-studio-latest.yml": "28de5fe54fb8c2c1ed66ff99ddc0b3d662bf5775",
+    ".github/workflows/visual-studio-preview.yml": "960f4ffb9bba62d8271db9007ae9ab76f279081e"
+  },
+  "definition_sha256": {
+    ".github/workflows/alpha-bridge-ci-verify.yml": "d3dacd19a9c94cd86ca5ba24b075c35f3ff224d155ca5891f3b4325ece933dac",
+    ".github/workflows/issues-nudge.yml": "0b95ba56c8530753aeaaa139daf5ad797e567939754300353891e231ebd230fb",
+    ".github/workflows/python_wheel_build.yml": "5676d46dba15e1cff83693e592a9bc32e73a46728238cc12c6d09fae1da6256b",
+    ".github/workflows/root-640.yml": "17da214ca172603c1a711883cc658d8cc47432b22e0983340ac5a2e0f6ea2a17",
+    ".github/workflows/root-docs-schedule.yml": "c7f3cf9bd225c2625ff5fdfcd34d841ce3406741ac2d84ac01cc57eeae883b34",
+    ".github/workflows/root-master.yml": "266dc022c7871d6399fa4595732e06f91b061571582995006673d7c139d4a046",
+    ".github/workflows/root-nightlies-active.yml": "ce3b19f3c70d606ab9962ca0d79d05d10fba2748b98f92c0cb47cb48db505f51",
+    ".github/workflows/root-nightlies-maintenance.yml": "816c573caac418d5a677a077f2ec366b789ff6f64a471da8d5be24dde2b0181e",
+    ".github/workflows/test-coverage.yml": "7f38ac857bd9da94e42a1338aa3325ac2f1b05a9a39caa5c98f63592487bfedf",
+    ".github/workflows/visual-studio-latest.yml": "2c30db2b44fd4d05bbc28b7359442a47db68f8f0335f002a16e17cff41947453",
+    ".github/workflows/visual-studio-preview.yml": "8ff676c40a2b4add9a779fffd157594d904553a02da74f04bbd63c4234338dbd"
+  },
+  "generator_sha256": "f238e5d52b0ec5c07f088af203f93698fbdea22a995856dc18c50f5365431353",
+  "schema": "alpha-bridge/fork-ci",
+  "source_branch": "master",
+  "source_commit": "8264b7869a3f2c70eb113a602c249e07d0964db3",
+  "source_repository": "root-project/root",
+  "version": 1,
+  "workflows": [
+    ".github/workflows/alpha-bridge-ci-verify.yml",
+    ".github/workflows/issues-nudge.yml",
+    ".github/workflows/python_wheel_build.yml",
+    ".github/workflows/root-640.yml",
+    ".github/workflows/root-docs-schedule.yml",
+    ".github/workflows/root-master.yml",
+    ".github/workflows/root-nightlies-active.yml",
+    ".github/workflows/root-nightlies-maintenance.yml",
+    ".github/workflows/test-coverage.yml",
+    ".github/workflows/visual-studio-latest.yml",
+    ".github/workflows/visual-studio-preview.yml"
+  ]
+}
