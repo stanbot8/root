@@ -157,19 +157,19 @@ jobs:
       env:
         GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
       run: |-
-        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    $INCREMENTAL --coverage       true --base_ref       ${{ github.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '3dbcdc4a98d308e4f05e4f87c26366e06af8782d' || github.sha) }} --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    $INCREMENTAL --coverage       true --base_ref       ${{ github.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '56f7ade88404935003dd9886e294e86491130e9a' || github.sha) }} --head_ref       refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha       ${{ github.event.pull_request.head.sha }} --repository     ${{ github.server_url }}/${{ github.repository }} 
 
 
     - name: Workflow dispatch
       if: github.event_name == 'workflow_dispatch'
       run: |-
-        .github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental    ${{ inputs.incremental }} --coverage       true --base_ref       ${{ inputs.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '3dbcdc4a98d308e4f05e4f87c26366e06af8782d' || github.sha) }} --head_ref       ${{ inputs.head_ref }} --head_sha       ${{ inputs.head_ref }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+        .github/workflows/root-ci-config/build_root.py --binaries       ${{ inputs.binaries }} --buildtype      ${{ inputs.buildtype }} --platform       alma10 --incremental    ${{ inputs.incremental }} --coverage       true --base_ref       ${{ inputs.base_ref }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '56f7ade88404935003dd9886e294e86491130e9a' || github.sha) }} --head_ref       ${{ inputs.head_ref }} --head_sha       ${{ inputs.head_ref }} --repository     ${{ github.server_url }}/${{ github.repository }} 
 
 
     - name: Nightly build
       if: github.event_name == 'schedule'
       run: |-
-        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    false --coverage       true --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '3dbcdc4a98d308e4f05e4f87c26366e06af8782d' || github.sha) }} --repository     ${{ github.server_url }}/${{ github.repository }} 
+        .github/workflows/root-ci-config/build_root.py --buildtype      Debug --platform       alma10 --incremental    false --coverage       true --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '56f7ade88404935003dd9886e294e86491130e9a' || github.sha) }} --repository     ${{ github.server_url }}/${{ github.repository }} 
 
 
     - name: Upload coverage to Codecov
@@ -203,9 +203,9 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         AB_REPOSITORY: ${{ github.repository }}
         AB_RUN_ID: ${{ github.run_id }}
-        AB_HEAD_SHA: 3dbcdc4a98d308e4f05e4f87c26366e06af8782d
+        AB_HEAD_SHA: 56f7ade88404935003dd9886e294e86491130e9a
         AB_WORKFLOW_DIGEST: 
-          688675e477d4d3e32bad7555b672e9a29aad17c54169b18c34b8d1806500dca8
+          ba584fbcd07acbe827ae03fb18316322c0526432aa5af8062c5c367e564a3c91
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}
