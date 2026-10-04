@@ -68,9 +68,9 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         AB_REPOSITORY: ${{ github.repository }}
         AB_RUN_ID: ${{ github.run_id }}
-        AB_HEAD_SHA: 56f7ade88404935003dd9886e294e86491130e9a
+        AB_HEAD_SHA: a8d6e8b46eca3ab4d102da7fb0a81ae75f561795
         AB_WORKFLOW_DIGEST: 
-          1fb4dc5beb41f9045fc74fff26cf7272a3c255d8d28bdd69590404b7816532e4
+          444a398dd47fb4b5e72c2eda4149cf87d12cd8ede203f76dfe4188be12dea77e
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}
