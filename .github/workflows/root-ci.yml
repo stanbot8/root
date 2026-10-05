@@ -1,23 +1,23 @@
-name: 'ROOT CI'
+name: ROOT CI
 
 on:
   # https://github.com/root-project/root/pull/12112#issuecomment-1411004278
   pull_request:
     branches:
-      - '**'
+    - '**'
     paths-ignore:
-      - 'doc/**'
-      - 'documentation/**'
-      - 'README/ReleaseNotes/**'
+    - doc/**
+    - documentation/**
+    - README/ReleaseNotes/**
 
   push:
     branches:
-      - 'master'
-      - 'v*-*-*-patches'
+    - master
+    - v*-*-*-patches
     paths-ignore:
-      - 'doc/**'
-      - 'documentation/**'
-      - 'README/**'
+    - doc/**
+    - documentation/**
+    - README/**
 
   # Allows nightly builds to trigger one run for each branch easily, by
   # providing the relevant branch as "default" value here:
@@ -42,12 +42,12 @@ on:
         required: true
         default: master
       base_ref:
-        description: ... to ... (can have same value)
+        description: '... to ... (can have same value)'
         type: string
         required: true
         default: master
       incremental:
-        description: 'Do incremental build'
+        description: Do incremental build
         type: boolean
         required: true
         default: true
@@ -69,32 +69,35 @@ on:
 
 env:
   PYTHONUNBUFFERED: true
-  OS_APPLICATION_CREDENTIAL_ID: '7f5b64a265244623a3a933308569bdba'
-  OS_APPLICATION_CREDENTIAL_SECRET: ${{ secrets.OS_APPLICATION_CREDENTIAL_SECRET }}
-  OS_AUTH_TYPE: 'v3applicationcredential'
-  OS_AUTH_URL: 'https://keystone.cern.ch/v3'
+  OS_APPLICATION_CREDENTIAL_ID: 7f5b64a265244623a3a933308569bdba
+  OS_APPLICATION_CREDENTIAL_SECRET: ${{ secrets.OS_APPLICATION_CREDENTIAL_SECRET
+    }}
+  OS_AUTH_TYPE: v3applicationcredential
+  OS_AUTH_URL: https://keystone.cern.ch/v3
   OS_IDENTITY_API_VERSION: 3
-  OS_INTERFACE: 'public'
-  OS_REGION_NAME: 'cern'
-  GLOBAL_OVERRIDES: 'asserts=ON LLVM_ENABLE_ASSERTIONS=ON'
+  OS_INTERFACE: public
+  OS_REGION_NAME: cern
+  GLOBAL_OVERRIDES: asserts=ON LLVM_ENABLE_ASSERTIONS=ON
   ROOT_TEST_S3_ACCESS_KEY: ${{ secrets.ROOT_TEST_S3_ACCESS_KEY }}
   ROOT_TEST_S3_SECRET_KEY: ${{ secrets.ROOT_TEST_S3_SECRET_KEY }}
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || 
+    github.run_id }}
+  cancel-in-progress: ${{ (github.event_name == 'workflow_dispatch' || 
+    github.run_attempt > 1) && (true) }}
 
 jobs:
   build-macos:
     # For any event that is not a PR, the CI will always run. In PRs, the CI
     # can be skipped if the tag [skip-ci] or [skip ci] is written in the title.
-    if: |
-        (github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
-        (github.event_name == 'pull_request' && !(
-          contains(github.event.pull_request.title, '[skip-ci]') ||
-          contains(github.event.pull_request.title, '[skip ci]') ||
-          contains(github.event.pull_request.labels.*.name, 'skip ci')
-        ))
+    if: |-
+      ${{ ((github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
+      (github.event_name == 'pull_request' && !(
+        contains(github.event.pull_request.title, '[skip-ci]') ||
+        contains(github.event.pull_request.title, '[skip ci]') ||
+        contains(github.event.pull_request.labels.*.name, 'skip ci')
+      ))) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
 
     permissions:
       contents: read
@@ -104,7 +107,10 @@ jobs:
       # The group name expands to something like
       # "ROOT CI-20964/merge-mac26-21173435944", unless it's a build cache update, where it will be
       # "ROOT CI-master     -mac26-update_build_cache", so only one of these jobs will run
-      group: ${{ github.workflow }}-${{ github.ref_name }}-${{ matrix.platform }}-${{ github.event_name == 'push' && 'update_build_cache' || github.run_id }}
+      group: ${{ github.workflow }}-${{ ((github.event_name == 'schedule' || 
+        github.event_name == 'workflow_run') && 'master' || github.ref_name) 
+        }}-${{ matrix.platform }}-${{ github.event_name == 'push' && 
+        'update_build_cache' || github.run_id }}
 
     defaults:
       run:
@@ -112,7 +118,8 @@ jobs:
 
     env:
       VIRTUAL_ENV_DIR: ${{ github.workspace }}/ROOT_CI_VENV
-      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.platform == 'mac-beta' && '27' || '' }} # Problems with gfortran falling back 18 (unsupported)
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.platform == 'mac-beta' && '27' || '' 
+        }}                                                                         # Problems with gfortran falling back 18 (unsupported)
       HOME: /Users/sftnight
 
     strategy:
@@ -123,136 +130,152 @@ jobs:
         platform: [mac26, mac27, mac-beta]
         arch: [ARM64]
         include:
-          - platform: mac15
-            arch: X86
-          - platform: mac-beta
-            is_special: true
+        - platform: mac15
+          arch: X86
+        - platform: mac-beta
+          is_special: true
 
     runs-on:
-      - self-hosted
-      - ${{ matrix.platform }}
+    - self-hosted
+    - ${{ matrix.platform }}
 
     name: |
       ${{ matrix.platform }} ${{ matrix.arch }}
       ${{ (github.event_name != 'schedule' && github.event_name != 'workflow_dispatch' && join( matrix.overrides, ', ' )) || '' }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref_name }}
-          path: "src/"
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref_name }}
+        path: src/
 
-      - uses: root-project/gcc-problem-matcher-improved@main
-        with:
-          build-directory: /Users/sftnight/ROOT-CI/src/
+    - uses: root-project/gcc-problem-matcher-improved@main
+      with:
+        build-directory: /Users/sftnight/ROOT-CI/src/
 
-      - name: Pull Request Build
-        if: github.event_name == 'pull_request'
-        env:
-          GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-          OVERRIDES: ${{ join( matrix.overrides, ' ') }}
-        run: |
-          [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
-          echo "Python is now $(which python3) $(python3 --version)"
-          src/.github/workflows/root-ci-config/build_root.py  \
-                    --buildtype       RelWithDebInfo          \
-                    --incremental     false                   \
-                    --base_ref        ${{ github.base_ref }}  \
-                    --sha             ${{ github.sha }}       \
-                    --pull_repository ${{ github.event.pull_request.head.repo.clone_url }}  \
-                    --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}  \
-                    --head_sha        ${{ github.event.pull_request.head.sha }}             \
-                    --repository      ${{ github.server_url }}/${{ github.repository }}     \
-                    --platform        ${{ matrix.platform }}                                \
-                    --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES}
+    - name: Pull Request Build
+      if: github.event_name == 'pull_request'
+      env:
+        GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
+        OVERRIDES: ${{ join( matrix.overrides, ' ') }}
+      run: |
+        [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
+        echo "Python is now $(which python3) $(python3 --version)"
+        src/.github/workflows/root-ci-config/build_root.py  \
+                  --buildtype       RelWithDebInfo          \
+                  --incremental     false                   \
+                  --base_ref        ${{ github.base_ref }}  \
+                  --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }}       \
+                  --pull_repository ${{ github.event.pull_request.head.repo.clone_url }}  \
+                  --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}  \
+                  --head_sha        ${{ github.event.pull_request.head.sha }}             \
+                  --repository      ${{ github.server_url }}/${{ github.repository }}     \
+                  --platform        ${{ matrix.platform }}                                \
+                  --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES}
 
-      - name: Workflow dispatch
-        if: ${{ github.event_name == 'workflow_dispatch' && !matrix.is_special }}
-        run: |
-          [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
-          echo "Python is now $(which python3) $(python3 --version)"
-          src/.github/workflows/root-ci-config/build_root.py  \
-                    --buildtype      ${{ inputs.buildtype }}  \
-                    --platform       ${{ matrix.platform }}   \
-                    --incremental    ${{ inputs.incremental }}\
-                    --base_ref       ${{ inputs.base_ref }}   \
-                    --head_ref       ${{ inputs.head_ref }}   \
-                    --binaries       ${{ inputs.binaries }}   \
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
+    - name: Workflow dispatch
+      if: ${{ github.event_name == 'workflow_dispatch' && !matrix.is_special }}
+      run: |
+        [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
+        echo "Python is now $(which python3) $(python3 --version)"
+        src/.github/workflows/root-ci-config/build_root.py  \
+                  --buildtype      ${{ inputs.buildtype }}  \
+                  --platform       ${{ matrix.platform }}   \
+                  --incremental    ${{ inputs.incremental }}\
+                  --base_ref       ${{ inputs.base_ref }}   \
+                  --head_ref       ${{ inputs.head_ref }}   \
+                  --binaries       ${{ inputs.binaries }}   \
+                  --repository     ${{ github.server_url }}/${{ github.repository }}
 
-      - name: Nightlies and push to branch
-        if:   github.event_name == 'schedule' || github.event_name == 'push'
-        env:
-          OVERRIDES: ${{ github.event_name == 'push' && format('{0} {1} {2}', '--overrides', env.GLOBAL_OVERRIDES, join( matrix.overrides, ' ')) || '' }}
-          BASE_REF:  ${{ github.event_name == 'push' && github.ref_name || inputs.ref_name }}
+    - name: Nightlies and push to branch
+      if: github.event_name == 'schedule' || github.event_name == 'push'
+      env:
+        OVERRIDES: ${{ github.event_name == 'push' && format('{0} {1} {2}', 
+          '--overrides', env.GLOBAL_OVERRIDES, join( matrix.overrides, ' ')) || 
+          '' }}
+        BASE_REF: ${{ github.event_name == 'push' && ((github.event_name == 
+          'schedule' || github.event_name == 'workflow_run') && 'master' || 
+          github.ref_name) || inputs.ref_name }}
           # For pushes, build exactly the pushed commit, not wherever the
           # branch happens to be when the job starts (issue #14061).
-          SHA:       ${{ github.event_name == 'push' && format('--sha {0}', github.sha) || '' }}
-        run: |
-          [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
-          echo "Python is now $(which python3) $(python3 --version)"
-          src/.github/workflows/root-ci-config/build_root.py    \
-                    --buildtype        RelWithDebInfo           \
-                    --platform         ${{ matrix.platform }}   \
-                    --incremental      false                    \
-                    --upload_artifacts false                    \
-                    --binaries         ${{ github.event_name == 'schedule' }} \
-                    --base_ref         ${BASE_REF}              \
-                    ${SHA}                                      \
-                    --repository       ${{ github.server_url }}/${{ github.repository }} \
-                    ${OVERRIDES}
+        SHA: ${{ github.event_name == 'push' && format('--sha {0}', 
+          ((github.event_name == 'schedule' || github.event_name == 
+          'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+          github.sha)) || '' }}
+      run: |
+        [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
+        echo "Python is now $(which python3) $(python3 --version)"
+        src/.github/workflows/root-ci-config/build_root.py    \
+                  --buildtype        RelWithDebInfo           \
+                  --platform         ${{ matrix.platform }}   \
+                  --incremental      false                    \
+                  --upload_artifacts false                    \
+                  --binaries         ${{ github.event_name == 'schedule' }} \
+                  --base_ref         ${BASE_REF}              \
+                  ${SHA}                                      \
+                  --repository       ${{ github.server_url }}/${{ github.repository }} \
+                  ${OVERRIDES}
 
-      - name: Upload test results
-        if:   ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Test Results ${{ matrix.platform }} ${{ matrix.arch }}
-          path: /Users/sftnight/ROOT-CI/build/TestResults.xml
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Test Results ${{ matrix.platform }} ${{ matrix.arch }}
+        path: /Users/sftnight/ROOT-CI/build/TestResults.xml
 
-      - name: Upload binaries
-        if:   ${{ !cancelled() && !matrix.is_special && (inputs.binaries || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')) }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Binaries ${{ matrix.platform }} ${{ matrix.arch }}
-          path: /Users/sftnight/ROOT-CI/packages/root_v*
-          if-no-files-found: error
+    - name: Upload binaries
+      if: ${{ !cancelled() && !matrix.is_special && (inputs.binaries || 
+        github.event_name == 'schedule' || startsWith(((github.event_name == 
+        'schedule' || github.event_name == 'workflow_run') && 
+        'refs/heads/master' || github.ref), 'refs/tags/')) }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Binaries ${{ matrix.platform }} ${{ matrix.arch }}
+        path: /Users/sftnight/ROOT-CI/packages/root_v*
+        if-no-files-found: error
 
-      - name: Install
-        env:
-          BUILD_DIR: ${{ env.HOME }}/ROOT-CI/build
-          INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/install
-        if: ${{ success() && !matrix.is_special }}
-        run: "cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_DIR }}"
-
-      - name: Build post-install test project
-        if: ${{ success() && !matrix.is_special }}
-        env:
-          SOURCE_DIR: ${{ env.HOME }}/ROOT-CI/src/test/PostInstall/
-          INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/install
-          POST_INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/PostInstall
-        run: |
-          cmake -S ${{ env.SOURCE_DIR }} -B ${{ env.POST_INSTALL_DIR }} -DCMAKE_PREFIX_PATH=${{ env.INSTALL_DIR }};
-          cmake --build ${{ env.POST_INSTALL_DIR }};
-
-      - name: CTest in post-install test project
-        if: ${{ success() && !matrix.is_special }}
-        env:
-          POST_INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/PostInstall
-        working-directory: ${{ env.POST_INSTALL_DIR }}
-        run: ctest --output-on-failure -j $(sysctl -n hw.logicalcpu)
+    - name: Install
+      env:
+        BUILD_DIR: ${{ env.HOME }}/ROOT-CI/build
+        INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/install
+      if: ${{ success() && !matrix.is_special }}
+      run: |-
+        cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_DIR }}
 
 
+    - name: Build post-install test project
+      if: ${{ success() && !matrix.is_special }}
+      env:
+        SOURCE_DIR: ${{ env.HOME }}/ROOT-CI/src/test/PostInstall/
+        INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/install
+        POST_INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/PostInstall
+      run: |
+        cmake -S ${{ env.SOURCE_DIR }} -B ${{ env.POST_INSTALL_DIR }} -DCMAKE_PREFIX_PATH=${{ env.INSTALL_DIR }};
+        cmake --build ${{ env.POST_INSTALL_DIR }};
+
+    - name: CTest in post-install test project
+      if: ${{ success() && !matrix.is_special }}
+      env:
+        POST_INSTALL_DIR: ${{ env.HOME }}/ROOT-CI/PostInstall
+      working-directory: ${{ env.POST_INSTALL_DIR }}
+      run: |-
+        ctest --output-on-failure -j $(sysctl -n hw.logicalcpu)
+
+
+
+    needs:
+    - alpha_bridge_inputs
   build-windows:
     # For any event that is not a PR, the CI will always run. In PRs, the CI
     # can be skipped if the tag [skip-ci] or [skip ci] is written in the title.
-    if: |
-        (github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
-        (github.event_name == 'pull_request' && !(
-          contains(github.event.pull_request.title, '[skip-ci]') ||
-          contains(github.event.pull_request.title, '[skip ci]') ||
-          contains(github.event.pull_request.labels.*.name, 'skip ci')
-        ))
+    if: |-
+      ${{ ((github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
+      (github.event_name == 'pull_request' && !(
+        contains(github.event.pull_request.title, '[skip-ci]') ||
+        contains(github.event.pull_request.title, '[skip ci]') ||
+        contains(github.event.pull_request.labels.*.name, 'skip ci')
+      ))) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
 
     permissions:
       contents: read
@@ -267,13 +290,13 @@ jobs:
         # by the fact that event_name is a string, but we need an array. So
         # we construct a JSON string that we can then convert into an array.
         event_name: ${{ fromJSON(format('["{0}"]', github.event_name)) }}
-        config: ["RelWithDebInfo", "Release"]
+        config: [RelWithDebInfo, Release]
         target_arch: [x64, x86]
         exclude:
-          - event_name: pull_request
-            config: RelWithDebInfo
-          - event_name: push
-            config: RelWithDebInfo
+        - event_name: pull_request
+          config: RelWithDebInfo
+        - event_name: push
+          config: RelWithDebInfo
           # This is this platform is subject to timeouts when building from
           # scratch.
           #- target_arch: x86
@@ -282,103 +305,81 @@ jobs:
     name: Windows 10 ${{ matrix.target_arch }} ${{ matrix.config }}
 
     runs-on: # Using '[self-hosted, windows, ${{ matrix.arch }}]' does not work for some reason :)
-      - self-hosted
-      - windows
-      - x64 # machine host, not build target
-      - target${{ matrix.target_arch }}
+    - self-hosted
+    - windows
+    - x64   # machine host, not build target
+    - target${{ matrix.target_arch }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref_name }}
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref_name }}
 
-      - name: Pull Request Build
-        if: github.event_name == 'pull_request'
-        env:
-          INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 'clean build') }}
-          GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-        shell: cmd
-        run: "C:\\setenv.bat ${{ matrix.target_arch }} &&
-              python .github/workflows/root-ci-config/build_root.py
-                    --buildtype       ${{ matrix.config }}
-                    --platform        windows10
-                    --incremental     $INCREMENTAL
-                    --base_ref        ${{ github.base_ref }}
-                    --sha             ${{ github.sha }}
-                    --pull_repository ${{ github.event.pull_request.head.repo.clone_url }}
-                    --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}
-                    --head_sha        ${{ github.event.pull_request.head.sha }}
-                    --repository      ${{ github.server_url }}/${{ github.repository }}
-                    --architecture    ${{ matrix.target_arch }}"
-
-      - name: Workflow dispatch/call
-        if:   github.event_name == 'workflow_dispatch'
-        shell: cmd
-        run: "C:\\setenv.bat ${{ matrix.target_arch }} &&
-              python .github/workflows/root-ci-config/build_root.py
-                    --buildtype    ${{ matrix.config }}
-                    --platform     windows10
-                    --incremental  ${{ inputs.incremental }}
-                    --base_ref     ${{ inputs.base_ref }}
-                    --head_ref     ${{ inputs.head_ref }}
-                    --binaries     ${{ inputs.binaries }}
-                    --repository   ${{ github.server_url }}/${{ github.repository }}
-                    --architecture ${{ matrix.target_arch }}"
-
-      - name: Nightly build
-        if:   github.event_name == 'schedule'
-        shell: cmd
-        run: "C:\\setenv.bat ${{ matrix.target_arch }} &&
-              python .github/workflows/root-ci-config/build_root.py
-                    --buildtype    ${{ matrix.config }}
-                    --platform     windows10
-                    --incremental  false
-                    --binaries     true
-                    --base_ref     ${{ inputs.ref_name }}
-                    --repository   ${{ github.server_url }}/${{ github.repository }}
-                    --architecture ${{ matrix.target_arch }}"
-
-      - name: Update build cache after push to release branch
-        if:   github.event_name == 'push'
-        shell: cmd
-        run: "C:\\setenv.bat ${{ matrix.target_arch }} &&
-              python .github/workflows/root-ci-config/build_root.py
-                    --buildtype    ${{ matrix.config }}
-                    --platform     windows10
-                    --incremental  false
-                    --base_ref     ${{ github.ref_name }}
-                    --sha          ${{ github.sha }}
-                    --binaries     ${{ startsWith(github.ref, 'refs/tags/') }}
-                    --repository   ${{ github.server_url }}/${{ github.repository }}
-                    --architecture ${{ matrix.target_arch }}"
-
-      - name: Upload test results
-        if:   ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Test Results Windows ${{ matrix.target_arch }} ${{ matrix.config }}
-          path: C:/ROOT-CI/build/TestResults.xml
-
-      - name: Upload binaries
-        if:   ${{ !cancelled() && (inputs.binaries || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')) }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Binaries ${{ matrix.target_arch }} ${{ matrix.config }}
-          path: C:/ROOT-CI/packages/root_v*
-          if-no-files-found: error
+    - name: Pull Request Build
+      if: github.event_name == 'pull_request'
+      env:
+        INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 
+          'clean build') }}
+        GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
+      shell: cmd
+      run: |-
+        C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype       ${{ matrix.config }} --platform        windows10 --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --architecture    ${{ matrix.target_arch }}
 
 
+    - name: Workflow dispatch/call
+      if: github.event_name == 'workflow_dispatch'
+      shell: cmd
+      run: |-
+        C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype    ${{ matrix.config }} --platform     windows10 --incremental  ${{ inputs.incremental }} --base_ref     ${{ inputs.base_ref }} --head_ref     ${{ inputs.head_ref }} --binaries     ${{ inputs.binaries }} --repository   ${{ github.server_url }}/${{ github.repository }} --architecture ${{ matrix.target_arch }}
+
+
+    - name: Nightly build
+      if: github.event_name == 'schedule'
+      shell: cmd
+      run: |-
+        C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype    ${{ matrix.config }} --platform     windows10 --incremental  false --binaries     true --base_ref     ${{ inputs.ref_name }} --repository   ${{ github.server_url }}/${{ github.repository }} --architecture ${{ matrix.target_arch }}
+
+
+    - name: Update build cache after push to release branch
+      if: github.event_name == 'push'
+      shell: cmd
+      run: |-
+        C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype    ${{ matrix.config }} --platform     windows10 --incremental  false --base_ref     ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha          ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --binaries     ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository   ${{ github.server_url }}/${{ github.repository }} --architecture ${{ matrix.target_arch }}
+
+
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Test Results Windows ${{ matrix.target_arch }} ${{ matrix.config 
+          }}
+        path: C:/ROOT-CI/build/TestResults.xml
+
+    - name: Upload binaries
+      if: ${{ !cancelled() && (inputs.binaries || github.event_name == 
+        'schedule' || startsWith(((github.event_name == 'schedule' || 
+        github.event_name == 'workflow_run') && 'refs/heads/master' || 
+        github.ref), 'refs/tags/')) }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Binaries ${{ matrix.target_arch }} ${{ matrix.config }}
+        path: C:/ROOT-CI/packages/root_v*
+        if-no-files-found: error
+
+
+    needs:
+    - alpha_bridge_inputs
   build-linux:
     # For any event that is not a PR, the CI will always run. In PRs, the CI
     # can be skipped if the tag [skip-ci] or [skip ci] is written in the title.
-    if: |
-        (github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
-        (github.event_name == 'pull_request' && !(
-          contains(github.event.pull_request.title, '[skip-ci]') ||
-          contains(github.event.pull_request.title, '[skip ci]') ||
-          contains(github.event.pull_request.labels.*.name, 'skip ci')
-        ))
+    if: |-
+      ${{ ((github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
+      (github.event_name == 'pull_request' && !(
+        contains(github.event.pull_request.title, '[skip-ci]') ||
+        contains(github.event.pull_request.title, '[skip ci]') ||
+        contains(github.event.pull_request.labels.*.name, 'skip ci')
+      ))) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
 
     permissions:
       contents: read
@@ -388,7 +389,10 @@ jobs:
       # The group name expands to something like
       # - For PRs:                 "ROOT CI-20964/merge-alma9-modules_off-21173435944"
       # - For build cache updates: "ROOT CI-master     -alma9-modules_off-update_build_cache"
-      group: ${{ github.workflow }}-${{ github.ref_name }}-${{ matrix.image }}-${{ matrix.property }}-${{ github.event_name == 'push' && 'update_build_cache' || github.run_id }}
+      group: ${{ github.workflow }}-${{ ((github.event_name == 'schedule' || 
+        github.event_name == 'workflow_run') && 'master' || github.ref_name) 
+        }}-${{ matrix.image }}-${{ matrix.property }}-${{ github.event_name == 
+        'push' && 'update_build_cache' || github.run_id }}
 
     strategy:
       fail-fast: false
@@ -399,77 +403,79 @@ jobs:
         # Common configs: {Release,Debug,RelWithDebInfo)
         # Build options: https://root.cern/install/build_from_source/#all-build-options
         include:
-          - image: fedora43
-          - image: fedora44
-          - image: alma8
-          - image: alma9
-            overrides: ["CMAKE_BUILD_TYPE=Debug"]
-          - image: alma10
-          - image: ubuntu22
-            python_venv: "/py-venv-3.12/ROOT-CI"
-            overrides: ["imt=Off", "CMAKE_BUILD_TYPE=Debug"]
-          - image: ubuntu2404
-            overrides: ["CMAKE_BUILD_TYPE=Debug"]
-          - image: ubuntu2604
-          - image: ubuntu2610
-          - image: debian13
-            overrides: ["dev=ON", "CMAKE_CXX_FLAGS=-Wsuggest-override"]
+        - image: fedora43
+        - image: fedora44
+        - image: alma8
+        - image: alma9
+          overrides: [CMAKE_BUILD_TYPE=Debug]
+        - image: alma10
+        - image: ubuntu22
+          python_venv: /py-venv-3.12/ROOT-CI
+          overrides: [imt=Off, CMAKE_BUILD_TYPE=Debug]
+        - image: ubuntu2404
+          overrides: [CMAKE_BUILD_TYPE=Debug]
+        - image: ubuntu2604
+        - image: ubuntu2610
+        - image: debian13
+          overrides: [dev=ON, CMAKE_CXX_FLAGS=-Wsuggest-override]
           # Special builds
-          - image: alma9
-            platform_config: alma9-modules_off
-            is_special: true
-            property: modules_off
-            overrides: ["CMAKE_CXX_STANDARD=20"]
-          - image: alma10
-            is_special: true
-            property: arm64
-            overrides: ["CMAKE_BUILD_TYPE=RelWithDebInfo", "builtin_zlib=ON", "builtin_zstd=ON", "CMAKE_CXX_STANDARD=20"]
-            architecture: ARM64
-          - image: alma10
-            platform_config: alma10-clang_ninja
-            is_special: true
-            property: "clang Ninja builtins auto-registration off"
-            overrides: ["CMAKE_CXX_STANDARD=20"]
+        - image: alma9
+          platform_config: alma9-modules_off
+          is_special: true
+          property: modules_off
+          overrides: [CMAKE_CXX_STANDARD=20]
+        - image: alma10
+          is_special: true
+          property: arm64
+          overrides: [CMAKE_BUILD_TYPE=RelWithDebInfo, builtin_zlib=ON, 
+              builtin_zstd=ON, CMAKE_CXX_STANDARD=20]
+          architecture: ARM64
+        - image: alma10
+          platform_config: alma10-clang_ninja
+          is_special: true
+          property: clang Ninja builtins auto-registration off
+          overrides: [CMAKE_CXX_STANDARD=20]
           # Asan build
-          - image: alma10
-            platform_config: alma10-asan
-            is_special: true
-            property: "asan"
-            overrides: ["ROOT_CTEST_CUSTOM_FLAGS=-E@\\(^tutorial-\\|gtest-core-metacling-TClingTest$\\|roottest-cling-specialobj-runf02$\\|roottest-root-collection-DeleteWarning$\\|roottest-root-io-evolution-fixarr2$\\|roottest-root-meta-rlibmap$\\|roottest-root-tree-cloning-runtreeCloneTest2$\\|roottest-root-treeproxy-vectorint-vectorint$\\)"]
+        - image: alma10
+          platform_config: alma10-asan
+          is_special: true
+          property: asan
+          overrides: [
+              ROOT_CTEST_CUSTOM_FLAGS=-E@\(^tutorial-\|gtest-core-metacling-TClingTest$\|roottest-cling-specialobj-runf02$\|roottest-root-collection-DeleteWarning$\|roottest-root-io-evolution-fixarr2$\|roottest-root-meta-rlibmap$\|roottest-root-tree-cloning-runtreeCloneTest2$\|roottest-root-treeproxy-vectorint-vectorint$\)]
           # Fedora Rawhide with Python freethreading+debug build
-          - image: rawhide
-            python_venv: "/py-venv-3.15td/ROOT-CI"
-            is_special: true
-            property: "Fedora pydebug no GIL"
-            overrides: ["CMAKE_CXX_STANDARD=23"]
+        - image: rawhide
+          python_venv: /py-venv-3.15td/ROOT-CI
+          is_special: true
+          property: Fedora pydebug no GIL
+          overrides: [CMAKE_CXX_STANDARD=23]
           # Minimal build
-          - image: alma10
-            platform_config: alma10-minimal
-            is_special: true
-            property: "minimal build"
-            overrides: ["CMAKE_CXX_STANDARD=20"]
+        - image: alma10
+          platform_config: alma10-minimal
+          is_special: true
+          property: minimal build
+          overrides: [CMAKE_CXX_STANDARD=20]
           # Benchmark build
-          - image: alma10
-            platform_config: alma10-benchmark
-            is_special: true
-            property: "benchmark build"
-            overrides: ["CMAKE_CXX_STANDARD=20"]
+        - image: alma10
+          platform_config: alma10-benchmark
+          is_special: true
+          property: benchmark build
+          overrides: [CMAKE_CXX_STANDARD=20]
           # Disable GPU builds until the DNS problem is solved
           # - image: ubuntu2404-cuda
           #   is_special: true
           #   property: gpu
           #   extra-runs-on: gpu
           # openSUSE Leap
-          - image: opensuse16
-            platform_config: opensuse16-march_native
-            is_special: true
-            property: march_native
+        - image: opensuse16
+          platform_config: opensuse16-march_native
+          is_special: true
+          property: march_native
 
     runs-on:
-      - self-hosted
-      - linux
-      - ${{ matrix.architecture == null && 'x64' || matrix.architecture }}
-      - ${{ matrix.extra-runs-on == null && 'cpu' || matrix.extra-runs-on }}
+    - self-hosted
+    - linux
+    - ${{ matrix.architecture == null && 'x64' || matrix.architecture }}
+    - ${{ matrix.extra-runs-on == null && 'cpu' || matrix.extra-runs-on }}
 
     name: |
       ${{ matrix.image }} ${{ matrix.property }}
@@ -477,12 +483,14 @@ jobs:
 
     container:
       image: registry.cern.ch/root-ci/${{ matrix.image }}:buildready # KEEP IN SYNC WITH env key below
-      options: --security-opt label=disable --rm ${{ matrix.property == 'gpu' && '--device nvidia.com/gpu=all' || '' }} # KEEP IN SYNC WITH env key below
+      options: --security-opt label=disable --rm ${{ matrix.property == 'gpu' &&
+        '--device nvidia.com/gpu=all' || '' }}                                                                          # KEEP IN SYNC WITH env key below
       volumes:
-        - ${{ matrix.image }}_ccache_volume:/github/home/.cache/ccache
+      - ${{ matrix.image }}_ccache_volume:/github/home/.cache/ccache
       env:
-        CONTAINER_IMAGE: "registry.cern.ch/root-ci/${{ matrix.image }}:buildready" #KEEP IN SYNC WITH ABOVE
-        CONTAINER_OPTIONS: "--security-opt label=disable --rm ${{ matrix.property == 'gpu' && '--device nvidia.com/gpu=all' || '' }}" #KEEP IN SYNC WITH ABOVE
+        CONTAINER_IMAGE: registry.cern.ch/root-ci/${{ matrix.image }}:buildready   #KEEP IN SYNC WITH ABOVE
+        CONTAINER_OPTIONS: --security-opt label=disable --rm ${{ matrix.property
+          == 'gpu' && '--device nvidia.com/gpu=all' || '' }}                                                                          #KEEP IN SYNC WITH ABOVE
 
     env:
       BUILD_DIR: /github/home/ROOT-CI/build
@@ -491,155 +499,134 @@ jobs:
       PYTHON_VENV: ${{ matrix.python_venv || '/py-venv/ROOT-CI' }}
 
     steps:
-      - name: Set up environment
-        run: |
-          ccache -o max_size=${{ matrix.is_special && '5G' || '1.5G' }}
-          ccache -s || true
-          if [ -d "$PYTHON_VENV/bin/" ]; then
-            . "$PYTHON_VENV/bin/activate" && echo PATH=$PATH >> $GITHUB_ENV;
-          fi
-          if ${{ contains(matrix.property, 'auto-registration off') }}; then
-            echo "Disabling ROOT's object auto registration for this job"
-            echo ROOT_OBJECT_AUTO_REGISTRATION=0 >> $GITHUB_ENV;
-          fi
+    - name: Set up environment
+      run: |
+        ccache -o max_size=${{ matrix.is_special && '5G' || '1.5G' }}
+        ccache -s || true
+        if [ -d "$PYTHON_VENV/bin/" ]; then
+          . "$PYTHON_VENV/bin/activate" && echo PATH=$PATH >> $GITHUB_ENV;
+        fi
+        if ${{ contains(matrix.property, 'auto-registration off') }}; then
+          echo "Disabling ROOT's object auto registration for this job"
+          echo ROOT_OBJECT_AUTO_REGISTRATION=0 >> $GITHUB_ENV;
+        fi
 
-      - name: Checkout
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ inputs.ref_name }}
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        ref: ${{ inputs.ref_name }}
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJSON(github) }}
-          JOB_CONTEXT: ${{ toJSON(job) }}
-          ENV_CONTEXT: ${{ toJSON(env) }}
-        run: |
-          echo "$GITHUB_CONTEXT"
-          echo "--------------------------"
-          echo "$JOB_CONTEXT"
-          echo "--------------------------"
-          echo "$ENV_CONTEXT"
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJSON(github) }}
+        JOB_CONTEXT: ${{ toJSON(job) }}
+        ENV_CONTEXT: ${{ toJSON(env) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
+        echo "--------------------------"
+        echo "$JOB_CONTEXT"
+        echo "--------------------------"
+        echo "$ENV_CONTEXT"
 
-      - name: Print debug info
-        run:  'printf "%s@%s\\n" "$(whoami)" "$(hostname)";
-               ls -la;
-               echo "Path is: $PATH"
-              '
+    - name: Print debug info
+      run: |-
+        printf "%s@%s\\n" "$(whoami)" "$(hostname)"; ls -la; echo "Path is: $PATH" 
 
-      - uses: root-project/gcc-problem-matcher-improved@main
-        with:
-          build-directory: /github/home/ROOT-CI/src/
 
-      - name: Pull Request Build
-        if:   ${{ github.event_name == 'pull_request' }}
-        env:
-          INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 'clean build') }}
-          GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
-          OVERRIDES: ${{ join( matrix.overrides, ' ') }}
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype       RelWithDebInfo
-                    --platform        ${{ matrix.image }}
-                    --platform_config ${{ matrix.platform_config }}
-                    --dockeropts      \"$CONTAINER_OPTIONS\"
-                    --incremental     $INCREMENTAL
-                    --base_ref        ${{ github.base_ref }}
-                    --sha             ${{ github.sha }}
-                    --pull_repository ${{ github.event.pull_request.head.repo.clone_url }}
-                    --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}
-                    --head_sha        ${{ github.event.pull_request.head.sha }}
-                    --repository      ${{ github.server_url }}/${{ github.repository }}
-                    --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES}
-              "
+    - uses: root-project/gcc-problem-matcher-improved@main
+      with:
+        build-directory: /github/home/ROOT-CI/src/
 
-      - name: Workflow dispatch
-        if:   ${{ github.event_name == 'workflow_dispatch' && !matrix.is_special }}
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype      ${{ inputs.buildtype }}
-                    --platform       ${{ matrix.image }}
-                    --platform_config ${{ matrix.platform_config }}
-                    --incremental    ${{ inputs.incremental }}
-                    --base_ref       ${{ inputs.base_ref }}
-                    --head_ref       ${{ inputs.head_ref }}
-                    --binaries       ${{ inputs.binaries }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-              "
+    - name: Pull Request Build
+      if: ${{ github.event_name == 'pull_request' }}
+      env:
+        INCREMENTAL: ${{ !contains(github.event.pull_request.labels.*.name, 
+          'clean build') }}
+        GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
+        OVERRIDES: ${{ join( matrix.overrides, ' ') }}
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype       RelWithDebInfo --platform        ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --dockeropts      "$CONTAINER_OPTIONS" --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
 
-      - name: Nightly build
-        if:   github.event_name == 'schedule'
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype      RelWithDebInfo
-                    --platform       ${{ matrix.image }}
-                    --platform_config ${{ matrix.platform_config }}
-                    --incremental    false
-                    --binaries       true
-                    --base_ref       ${{ inputs.ref_name }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-              "
 
-      - name: Update build cache after push to release branch
-        if:   github.event_name == 'push'
-        env:
-          OVERRIDES: ${{ join( matrix.overrides, ' ') }}
-        run: ".github/workflows/root-ci-config/build_root.py
-                    --buildtype      RelWithDebInfo
-                    --platform       ${{ matrix.image }}
-                    --platform_config ${{ matrix.platform_config }}
-                    --incremental    false
-                    --base_ref       ${{ github.ref_name }}
-                    --sha            ${{ github.sha }}
-                    --binaries       ${{ startsWith(github.ref, 'refs/tags/') }}
-                    --repository     ${{ github.server_url }}/${{ github.repository }}
-                    --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES}
-              "
+    - name: Workflow dispatch
+      if: ${{ github.event_name == 'workflow_dispatch' && !matrix.is_special }}
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype      ${{ inputs.buildtype }} --platform       ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --incremental    ${{ inputs.incremental }} --base_ref       ${{ inputs.base_ref }} --head_ref       ${{ inputs.head_ref }} --binaries       ${{ inputs.binaries }} --repository     ${{ github.server_url }}/${{ github.repository }} 
 
-      - name: Upload test results
-        if:   ${{ !cancelled() }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Test Results ${{ matrix.image }} ${{ matrix.property }}
-          path: /github/home/ROOT-CI/build/TestResults.xml
 
-      - name: Upload binaries
-        if:   ${{ !cancelled() && !matrix.is_special && (inputs.binaries || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/')) }}
-        uses: actions/upload-artifact@v6
-        with:
-          name: Binaries ${{ matrix.image }} ${{ matrix.property }}
-          path: /github/home/ROOT-CI/packages/root_v*
-          if-no-files-found: error
+    - name: Nightly build
+      if: github.event_name == 'schedule'
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype      RelWithDebInfo --platform       ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --incremental    false --binaries       true --base_ref       ${{ inputs.ref_name }} --repository     ${{ github.server_url }}/${{ github.repository }} 
 
-      - name: ccache info (post)
-        run: |
-          ccache -s || true
 
-      - name: Install
-        id: install
-        run: cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_DIR }}
+    - name: Update build cache after push to release branch
+      if: github.event_name == 'push'
+      env:
+        OVERRIDES: ${{ join( matrix.overrides, ' ') }}
+      run: |-
+        .github/workflows/root-ci-config/build_root.py --buildtype      RelWithDebInfo --platform       ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --incremental    false --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --binaries       ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository     ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
 
-      - name: Check headers
-        if: steps.install.outcome == 'success'
-        run: bash test/PostInstall/check-headers.sh ${{ env.INSTALL_DIR }}/include/
 
-      - name: Build post-install test project
-        id: postInstall
-        if: steps.install.outcome == 'success'
-        run: |
-          cmake -S test/PostInstall/ -B ${{ env.POST_INSTALL_DIR }} -DCMAKE_PREFIX_PATH=${{ env.INSTALL_DIR }};
-          cmake --build ${{ env.POST_INSTALL_DIR }};
+    - name: Upload test results
+      if: ${{ !cancelled() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Test Results ${{ matrix.image }} ${{ matrix.property }}
+        path: /github/home/ROOT-CI/build/TestResults.xml
 
-      - name: CTest in post-install test project
-        if: steps.postInstall.outcome == 'success' && matrix.property != 'asan'
-        working-directory: ${{ env.POST_INSTALL_DIR }}
-        run: ctest --output-on-failure -j $(nproc)
+    - name: Upload binaries
+      if: ${{ !cancelled() && !matrix.is_special && (inputs.binaries || 
+        github.event_name == 'schedule' || startsWith(((github.event_name == 
+        'schedule' || github.event_name == 'workflow_run') && 
+        'refs/heads/master' || github.ref), 'refs/tags/')) }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: Binaries ${{ matrix.image }} ${{ matrix.property }}
+        path: /github/home/ROOT-CI/packages/root_v*
+        if-no-files-found: error
 
+    - name: ccache info (post)
+      run: |
+        ccache -s || true
+
+    - name: Install
+      id: install
+      run: |-
+        cmake --install ${{ env.BUILD_DIR }} --prefix ${{ env.INSTALL_DIR }}
+
+
+    - name: Check headers
+      if: steps.install.outcome == 'success'
+      run: |-
+        bash test/PostInstall/check-headers.sh ${{ env.INSTALL_DIR }}/include/
+
+
+    - name: Build post-install test project
+      id: postInstall
+      if: steps.install.outcome == 'success'
+      run: |
+        cmake -S test/PostInstall/ -B ${{ env.POST_INSTALL_DIR }} -DCMAKE_PREFIX_PATH=${{ env.INSTALL_DIR }};
+        cmake --build ${{ env.POST_INSTALL_DIR }};
+
+    - name: CTest in post-install test project
+      if: steps.postInstall.outcome == 'success' && matrix.property != 'asan'
+      working-directory: ${{ env.POST_INSTALL_DIR }}
+      run: |-
+        ctest --output-on-failure -j $(nproc)
+
+
+    needs:
+    - alpha_bridge_inputs
   event_file:
     # Upload a file with the github event context for the step that posts the test results.
     # For any event that is not a PR, the CI will always run. In PRs, the CI
     # can be skipped if the tag [skip-ci] or [skip ci] is written in the title.
-    if: |
-        (github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
-        (github.event_name == 'pull_request' && !(contains(github.event.pull_request.title, '[skip-ci]') || contains(github.event.pull_request.title, '[skip ci]')))
+    if: |-
+      ${{ ((github.repository_owner == 'root-project' && github.event_name != 'pull_request') ||
+      (github.event_name == 'pull_request' && !(contains(github.event.pull_request.title, '[skip-ci]') || contains(github.event.pull_request.title, '[skip ci]')))) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
 
-    name: "Upload Github event context for the test summary step"
+    name: Upload Github event context for the test summary step
     runs-on: ubuntu-latest
     steps:
     - name: Upload
@@ -648,19 +635,28 @@ jobs:
         name: Event File
         path: ${{ github.event_path }}
 
+    needs:
+    - alpha_bridge_inputs
   publish_binaries:
     # Publish the binary tarballs to the website
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.binaries}}
-    name: "Publish binaries on the web"
-    needs: [build-linux, build-windows, build-macos]
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.binaries) && 
+      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    name: Publish binaries on the web
+    needs:
+    - build-linux
+    - build-windows
+    - build-macos
+    - alpha_bridge_inputs
     runs-on: ubuntu-latest
     steps:
     - name: Download All Artifacts
       uses: actions/download-artifact@v8
     - name: Install Kerberos utilities
-      run: sudo apt-get install -y krb5-user
+      run: |-
+        sudo apt-get install -y krb5-user
     - name: Install XRootD client
-      run: sudo apt-get -y install xrootd-client
+      run: |-
+        sudo apt-get -y install xrootd-client
     - name: Copy Binaries to EOS
       env:
         RWEBEOS_KT: ${{ secrets.RWEBEOS_KT }}
@@ -677,13 +673,142 @@ jobs:
 
   invoke_rn_creation:
     # Create release notes
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.binaries}}
-    name: "Invoke the creation of the Release Notes"
-    needs: publish_binaries
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.binaries) && 
+      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    name: Invoke the creation of the Release Notes
+    needs:
+    - publish_binaries
+    - alpha_bridge_inputs
     uses: ./.github/workflows/root-rn-ci.yml
     secrets:
       RWEBEOS_KT: ${{ secrets.RWEBEOS_KT }}
       KRB5REALM: ${{ secrets.KRB5REALM }}
       KRB5USER: ${{ secrets.KRB5USER }}
     with:
-      branch: ${{ github.head_ref || github.ref_name }}
+      branch: ${{ github.head_ref || ((github.event_name == 'schedule' || 
+        github.event_name == 'workflow_run') && 'master' || github.ref_name) }}
+  alpha_bridge_inputs:
+    name: CI input check
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    concurrency:
+      group: alpha-bridge-inputs-${{ github.workflow }}-${{ github.sha }}-${{ 
+        github.event.schedule || github.event_name }}
+      cancel-in-progress: false
+    outputs:
+      changed: ${{ steps.identity.outputs.changed }}
+    steps:
+    - id: identity
+      name: Check source, workflow, variables, and runner inputs
+      env:
+        GH_TOKEN: ${{ github.token }}
+        AB_REPOSITORY: ${{ github.repository }}
+        AB_RUN_ID: ${{ github.run_id }}
+        AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name 
+          == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+          github.sha }}
+        AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
+          'workflow_run') && 'refs/heads/master' || github.ref }}
+        AB_WORKFLOW_DIGEST: 
+          34e21b543a05aca452ede0b156f82845b843cc306096923f37ced7b2bbbb38a8
+        AB_EVENT: ${{ github.event_name }}
+        AB_SCHEDULE: ${{ github.event.schedule || '' }}
+        AB_VARIABLES: ${{ toJSON(vars) }}
+        AB_INPUTS: ${{ toJSON(inputs) }}
+        AB_WORKFLOW_RUN: ${{ toJSON(github.event.workflow_run) }}
+      shell: bash
+      run: "python3 - <<'ALPHA_BRIDGE_CI_PY'\n\"\"\"Native automatic-CI input check,
+        embedded in the owned fork configuration.\"\"\"\n\nfrom __future__ import
+        annotations\n\nimport base64\nimport hashlib\nimport json\nimport os\nimport
+        re\nimport urllib.parse\nimport urllib.request\n\nINPUT_CHECK_NAMES = (\"\
+        CI input check\", \"AlphaBridge input check\")\nINPUT_IDENTITY_PREFIXES =
+        (\"CI input identity \", \"AlphaBridge input identity \")\n\n\ndef input_identity(job):\n\
+        \    for step in job.get(\"steps\", []):\n        if step.get(\"conclusion\"\
+        ) != \"success\":\n            continue\n        name = step.get(\"name\"\
+        , \"\")\n        for prefix in INPUT_IDENTITY_PREFIXES:\n            if name.startswith(prefix):\n\
+        \                identity = name.removeprefix(prefix)\n                if
+        re.fullmatch(r\"[0-9a-f]{64}\", identity):\n                    return identity\n\
+        \    return \"\"\n\n\ndef parent_has_work(get, repository, parent):\n    if
+        (\n        not parent\n        or parent.get(\"head_branch\") != \"alpha-bridge-ci\"\
+        \n        or parent.get(\"status\") != \"completed\"\n    ):\n        return
+        True\n    sha = parent[\"head_sha\"]\n    if re.fullmatch(r\"[0-9a-f]{40}\"\
+        , sha) is None:\n        raise ValueError(\"parent workflow has no exact configuration
+        commit\")\n    record = get(f\"/repos/{repository}\")\n    marker_file = get(f\"\
+        /repos/{repository}/contents/.github/alpha-bridge-ci.json?ref={sha}\")\n \
+        \   marker = json.loads(base64.b64decode(marker_file[\"content\"]))\n    if
+        (\n        record.get(\"fork\") is not True\n        or marker.get(\"schema\"\
+        ) != \"alpha-bridge/fork-ci\"\n        or marker.get(\"source_repository\"\
+        ) != record.get(\"parent\", {}).get(\"full_name\")\n    ):\n        raise
+        ValueError(\"parent CI configuration has no verified fork ownership\")\n \
+        \   path = parent[\"path\"].split(\"@\", 1)[0]\n    if not path.startswith(\"\
+        .github/workflows/\") or \"/\" in path.removeprefix(\".github/workflows/\"\
+        ):\n        raise ValueError(\"parent workflow path is outside its configuration
+        owner\")\n    definition = get(f\"/repos/{repository}/contents/{urllib.parse.quote(path,
+        safe='/')}?ref={sha}\")\n    if hashlib.sha256(base64.b64decode(definition[\"\
+        content\"])).hexdigest() != marker.get(\n        \"definition_sha256\", {}\n\
+        \    ).get(path):\n        raise ValueError(\"parent workflow differs from
+        its owned definition\")\n    if path == \".github/workflows/alpha-bridge-ci-verify.yml\"\
+        :\n        return False\n    jobs = []\n    page = 1\n    while True:\n  \
+        \      values = get(\n            f\"/repos/{repository}/actions/runs/{parent['id']}/jobs?per_page=100&page={page}\"\
+        \n        )[\"jobs\"]\n        jobs.extend(values)\n        if len(values)
+        < 100:\n            break\n        page += 1\n    guards = [\n        job\n\
+        \        for job in jobs\n        if job.get(\"name\") in INPUT_CHECK_NAMES\n\
+        \        and job.get(\"conclusion\") == \"success\"\n        and input_identity(job)\n\
+        \    ]\n    return not guards or any(\n        job not in guards and job.get(\"\
+        conclusion\") != \"skipped\" for job in jobs\n    )\n\n\ndef changed(get,
+        *, repository, run_id, identity, job_name):\n    current = get(f\"/repos/{repository}/actions/runs/{run_id}\"\
+        )\n    event = current[\"event\"]\n    page = 1\n    while True:\n       \
+        \ # Filter locally: GitHub caps filtered searches at 1,000 results.\n    \
+        \    query = urllib.parse.urlencode({\"per_page\": 100, \"page\": page})\n\
+        \        runs = get(f\"/repos/{repository}/actions/workflows/{current['workflow_id']}/runs?{query}\"\
+        )\n        for run in runs[\"workflow_runs\"]:\n            if run[\"id\"\
+        ] == run_id:\n                continue\n            if run.get(\"head_branch\"\
+        ) != current[\"head_branch\"] or run.get(\"event\") != event:\n          \
+        \      continue\n            job_page = 1\n            while True:\n     \
+        \           jobs = get(\n                    f\"/repos/{repository}/actions/runs/{run['id']}/jobs?per_page=100&page={job_page}\"\
+        \n                )[\"jobs\"]\n                for job in jobs:\n        \
+        \            if (\n                        (\n                           \
+        \ job[\"name\"] in INPUT_CHECK_NAMES\n                            if job_name
+        in INPUT_CHECK_NAMES\n                            else job[\"name\"] == job_name\n\
+        \                        )\n                        and job.get(\"status\"\
+        ) == \"completed\"\n                        and job.get(\"conclusion\") ==
+        \"success\"\n                        and input_identity(job) == identity\n\
+        \                    ):\n                        return False\n          \
+        \      if len(jobs) < 100:\n                    break\n                job_page
+        += 1\n        if len(runs[\"workflow_runs\"]) < 100:\n            return True\n\
+        \        page += 1\n\n\ndef main():\n    event = os.environ[\"AB_EVENT\"]\n\
+        \    event_payload = None\n    if event not in {\"schedule\", \"workflow_run\"\
+        }:\n        with open(os.environ[\"GITHUB_EVENT_PATH\"], encoding=\"utf-8\"\
+        ) as payload_file:\n            event_payload = json.load(payload_file)\n\
+        \    inputs = {\n        \"source_commit\": os.environ[\"AB_HEAD_SHA\"],\n\
+        \        \"source_ref\": os.environ[\"AB_REF\"],\n        \"workflow_definition\"\
+        : os.environ[\"AB_WORKFLOW_DIGEST\"],\n        \"event\": event,\n       \
+        \ \"event_payload\": event_payload,\n        \"schedule\": os.environ[\"AB_SCHEDULE\"\
+        ],\n        \"variables\": json.loads(os.environ[\"AB_VARIABLES\"]),\n   \
+        \     \"inputs\": json.loads(os.environ[\"AB_INPUTS\"]),\n        \"runner_image\"\
+        : [os.environ.get(\"ImageOS\", \"\"), os.environ.get(\"ImageVersion\", \"\"\
+        )],\n        \"producer\": json.loads(os.environ.get(\"AB_WORKFLOW_RUN\",
+        \"null\")),\n    }\n    identity = hashlib.sha256(json.dumps(inputs, sort_keys=True).encode()).hexdigest()\n\
+        \n    def get(path):\n        request = urllib.request.Request(\n        \
+        \    \"https://api.github.com\" + path,\n            headers={\n         \
+        \       \"Authorization\": \"Bearer \" + os.environ[\"GH_TOKEN\"],\n     \
+        \           \"Accept\": \"application/vnd.github+json\",\n               \
+        \ \"X-GitHub-Api-Version\": \"2026-03-10\",\n            },\n        )\n \
+        \       with urllib.request.urlopen(request, timeout=60) as response:\n  \
+        \          return json.load(response)\n\n    manual = event == \"workflow_dispatch\"\
+        \ or int(os.environ[\"GITHUB_RUN_ATTEMPT\"]) > 1\n    should_run = manual
+        or (\n        (\n            inputs[\"event\"] != \"workflow_run\"\n     \
+        \       or parent_has_work(get, os.environ[\"AB_REPOSITORY\"], inputs[\"producer\"\
+        ])\n        )\n        and changed(\n            get,\n            repository=os.environ[\"\
+        AB_REPOSITORY\"],\n            run_id=int(os.environ[\"AB_RUN_ID\"]),\n  \
+        \          identity=identity,\n            job_name=\"CI input check\",\n\
+        \        )\n    )\n    with open(os.environ[\"GITHUB_OUTPUT\"], \"a\", encoding=\"\
+        utf-8\") as output:\n        output.write(f\"digest={identity}\\nchanged={str(should_run).lower()}\\\
+        n\")\n    print(\n        \"Explicit CI run requested\"\n        if manual\n\
+        \        else \"CI inputs changed\"\n        if should_run\n        else \"\
+        CI inputs unchanged; build and test jobs skipped\"\n    )\n\n\nif __name__
+        == \"__main__\":\n    main()\n\nALPHA_BRIDGE_CI_PY\n"
+    - name: CI input identity ${{ steps.identity.outputs.digest }}
+      run: echo 'Input identity recorded'
