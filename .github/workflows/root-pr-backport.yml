@@ -52,7 +52,7 @@ jobs:
           path: root_official
 
           ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
       - name: Checkout the bot ROOT repo
         uses: actions/checkout@v6
@@ -90,12 +90,12 @@ jobs:
           AB_REPOSITORY: ${{ github.repository }}
           AB_RUN_ID: ${{ github.run_id }}
           AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name
-            == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            62ac92b00aa1e861a8609900f5e2e5fe32c246e14369339e0fb499dceafa891f
+            6b1690bf5aef34e864d8c4c543ba112c60755c6d24a729f8a0fcd8ead8786afb
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}

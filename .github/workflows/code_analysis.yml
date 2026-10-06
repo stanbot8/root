@@ -125,7 +125,7 @@ jobs:
         fetch-depth: 2
 
         ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-          'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+          'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
           github.sha }}
     - name: Get the list of changed files
       id: diff
@@ -199,12 +199,12 @@ jobs:
         AB_REPOSITORY: ${{ github.repository }}
         AB_RUN_ID: ${{ github.run_id }}
         AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name 
-          == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+          == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
           github.sha }}
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          a0b870f68880142156fd06c41cf07640d6b3a755f5d86b4a163447ae768c6b71
+          6627e9cb6a468ae4c3055c73a5805edaabf4da181f7e06c59e14454110f4197a
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

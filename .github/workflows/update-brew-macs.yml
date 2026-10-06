@@ -57,7 +57,7 @@ jobs:
           path: src/
 
           ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
       - name: Update brew packages
         run: |
@@ -119,12 +119,12 @@ jobs:
           AB_REPOSITORY: ${{ github.repository }}
           AB_RUN_ID: ${{ github.run_id }}
           AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name
-            == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            aa11e91638eb912f9a95f32e476db3794fcf30bcd8c42ae006581819d224f66f
+            99c3433cffea201234e21faf1844f61e23dea6e8b60e4c8e72fc00b7648e8f17
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}

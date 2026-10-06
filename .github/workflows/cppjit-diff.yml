@@ -13,7 +13,7 @@ jobs:
         with:
           path: root
           ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
       - name: Determine tag that cppjit in ROOT is based
         id: determine-tag
@@ -59,12 +59,12 @@ jobs:
           AB_REPOSITORY: ${{ github.repository }}
           AB_RUN_ID: ${{ github.run_id }}
           AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name
-            == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            4025674a5c41e3a1ac67d2608ff713b2c8899166fd328ff10a467a04c71f919c
+            d6d5a9170fe2c8b3b67264170157e23f03fa5a5a92d146f970daed5d09f950eb
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}

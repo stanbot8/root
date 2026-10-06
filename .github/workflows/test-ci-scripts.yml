@@ -16,7 +16,7 @@ jobs:
 
         with:
           ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
       - name: Run unit tests
         run: |-
@@ -46,12 +46,12 @@ jobs:
           AB_REPOSITORY: ${{ github.repository }}
           AB_RUN_ID: ${{ github.run_id }}
           AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name
-            == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            286c33e7108eae2cf5332974f6f8736fb66977bbcdd0c6fd93dac4f700c49851
+            b11e66934e858c0e7be2e11dea425e213b9c2ab164c10ebe9c726117284f38f0
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}

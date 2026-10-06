@@ -114,7 +114,7 @@ jobs:
                     --buildtype       RelWithDebInfo          \
                     --incremental     false                   \
                     --base_ref        ${{ github.base_ref }}  \
-                    --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }}       \
+                    --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || github.sha) }}       \
                     --pull_repository ${{ github.event.pull_request.head.repo.clone_url }}  \
                     --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }}  \
                     --head_sha        ${{ github.event.pull_request.head.sha }}             \
@@ -150,7 +150,7 @@ jobs:
           # branch happens to be when the job starts (issue #14061).
           SHA: ${{ github.event_name == 'push' && format('--sha {0}', 
             ((github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha)) || '' }}
         run: |
           [ -d "${VIRTUAL_ENV_DIR}" ] && source ${VIRTUAL_ENV_DIR}/bin/activate
@@ -273,7 +273,7 @@ jobs:
           GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
         shell: cmd
         run: |-
-          C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype       ${{ matrix.config }} --platform        windows10 --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --architecture    ${{ matrix.target_arch }}
+          C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype       ${{ matrix.config }} --platform        windows10 --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --architecture    ${{ matrix.target_arch }}
 
 
       - name: Workflow dispatch/call
@@ -294,7 +294,7 @@ jobs:
         if: github.event_name == 'push'
         shell: cmd
         run: |-
-          C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype    ${{ matrix.config }} --platform     windows10 --incremental  false --base_ref     ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha          ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --binaries     ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository   ${{ github.server_url }}/${{ github.repository }} --architecture ${{ matrix.target_arch }}
+          C:\setenv.bat ${{ matrix.target_arch }} && python .github/workflows/root-ci-config/build_root.py --buildtype    ${{ matrix.config }} --platform     windows10 --incremental  false --base_ref     ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha          ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || github.sha) }} --binaries     ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository   ${{ github.server_url }}/${{ github.repository }} --architecture ${{ matrix.target_arch }}
 
 
       - name: Upload test results
@@ -497,7 +497,7 @@ jobs:
           GITHUB_PR_ORIGIN: ${{ github.event.pull_request.head.repo.clone_url }}
           OVERRIDES: ${{ join( matrix.overrides, ' ') }}
         run: |-
-          .github/workflows/root-ci-config/build_root.py --buildtype       RelWithDebInfo --platform        ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --dockeropts      "$CONTAINER_OPTIONS" --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
+          .github/workflows/root-ci-config/build_root.py --buildtype       RelWithDebInfo --platform        ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --dockeropts      "$CONTAINER_OPTIONS" --incremental     $INCREMENTAL --base_ref        ${{ github.base_ref }} --sha             ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || github.sha) }} --pull_repository ${{ github.event.pull_request.head.repo.clone_url }} --head_ref        refs/pull/${{ github.event.pull_request.number }}/head:${{ github.event.pull_request.head.ref }} --head_sha        ${{ github.event.pull_request.head.sha }} --repository      ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
 
 
       - name: Workflow dispatch
@@ -518,7 +518,7 @@ jobs:
         env:
           OVERRIDES: ${{ join( matrix.overrides, ' ') }}
         run: |-
-          .github/workflows/root-ci-config/build_root.py --buildtype      RelWithDebInfo --platform       ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --incremental    false --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || github.sha) }} --binaries       ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository     ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
+          .github/workflows/root-ci-config/build_root.py --buildtype      RelWithDebInfo --platform       ${{ matrix.image }} --platform_config ${{ matrix.platform_config }} --incremental    false --base_ref       ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'master' || github.ref_name) }} --sha            ${{ ((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || github.sha) }} --binaries       ${{ startsWith(((github.event_name == 'schedule' || github.event_name == 'workflow_run') && 'refs/heads/master' || github.ref), 'refs/tags/') }} --repository     ${{ github.server_url }}/${{ github.repository }} --overrides       ${GLOBAL_OVERRIDES} ${OVERRIDES} 
 
 
       - name: Upload test results
@@ -661,12 +661,12 @@ jobs:
           AB_REPOSITORY: ${{ github.repository }}
           AB_RUN_ID: ${{ github.run_id }}
           AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name
-            == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
+            == 'workflow_run') && 'c17265734de7c7deeec2a5cb7bfc7e88f7aaeb54' || 
             github.sha }}
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            af159e26898b7c1641acd210b4bd401f7da3de060c8f11efa557003c4ad58c0b
+            af982420f6c3c98b9ce9b67e5094425aaa42cddc2ba29766e16119b657bff668
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}
