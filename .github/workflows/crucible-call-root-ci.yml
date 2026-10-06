@@ -2,58 +2,19 @@ name: 'ROOT CI'
 
 on:
   # https://github.com/root-project/root/pull/12112#issuecomment-1411004278
-  pull_request:
-    branches:
-      - '**'
-    paths-ignore:
-      - 'doc/**'
-      - 'documentation/**'
-      - 'README/ReleaseNotes/**'
-
-  push:
-    branches:
-      - 'master'
-      - 'v*-*-*-patches'
-    paths-ignore:
-      - 'doc/**'
-      - 'documentation/**'
-      - 'README/**'
-
-  # Allows nightly builds to trigger one run for each branch easily, by
-  # providing the relevant branch as "default" value here:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       head_ref:
-        description: rebase from ...
         type: string
-        required: true
         default: master
       base_ref:
-        description: '... to ... (can have same value)'
         type: string
-        required: true
         default: master
-      incremental:
-        description: 'Do incremental build'
-        type: boolean
-        required: true
-        default: true
-      binaries:
-        description: Create binary packages and upload them as artifacts
-        type: boolean
-        required: true
-        default: false
-      buildtype:
-        description: The CMAKE_BUILD_TYPE to use for non-Windows.
-        type: choice
-        options:
-          - Debug
-          - RelWithDebInfo
-          - Release
-          - MinSizeRel
-        default: Debug
-        required: true
+      ref_name:
+        type: string
+        default: master
 
+  # Enables manual start of workflow
 env:
   PYTHONUNBUFFERED: true
   OS_APPLICATION_CREDENTIAL_ID: '7f5b64a265244623a3a933308569bdba'
@@ -705,7 +666,7 @@ jobs:
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            a1f874f822764fa6aab3210953fa7be730d80ff751e8dd5cd6384025b996cf89
+            af159e26898b7c1641acd210b4bd401f7da3de060c8f11efa557003c4ad58c0b
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}

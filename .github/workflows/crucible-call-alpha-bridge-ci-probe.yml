@@ -1,50 +1,34 @@
-name: 'ROOT Nightlies for Maintenance Releases'
-
+name: CI input probe
 on:
-  schedule:
-  - cron: '10 2 1-31/2 * *'
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      incremental:
-        description: 'Do incremental build'
-        type: boolean
+      probe:
+        type: string
         required: true
-        default: true
-      binaries:
-        description: Create binary packages and upload them as artifacts
-        type: boolean
-        required: true
-        default: false
-      buildtype:
-        description: The CMAKE_BUILD_TYPE to use for non-Windows.
-        type: choice
-        options:
-        - Debug
-        - RelWithDebInfo
-        - Release
-        - MinSizeRel
-        default: Debug
-        required: true
-
 jobs:
-  Nightly-6_26:
-    uses: root-project/root/.github/workflows/root-ci.yml@v6-26-00-patches
-    secrets: inherit
+  nested0:
+    uses: ./.github/workflows/alpha-bridge-ci-consumer.yml
+    with:
+      probe: ${{ inputs.probe }}
+      slot: '0'
     needs:
     - alpha_bridge_inputs
     if: |-
       ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
-  Nightly-6_28:
-    uses: root-project/root/.github/workflows/root-ci.yml@v6-28-00-patches
-    secrets: inherit
+  nested1:
+    uses: ./.github/workflows/alpha-bridge-ci-consumer.yml
+    with:
+      probe: ${{ inputs.probe }}
+      slot: '1'
     needs:
     - alpha_bridge_inputs
     if: |-
       ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
-  Nightly-6_30:
-    uses: root-project/root/.github/workflows/root-ci.yml@v6-30-00-patches
-    secrets: inherit
-
+  nested2:
+    uses: ./.github/workflows/alpha-bridge-ci-consumer.yml
+    with:
+      probe: ${{ inputs.probe }}
+      slot: '2'
     needs:
     - alpha_bridge_inputs
     if: |-
@@ -56,7 +40,7 @@ jobs:
       actions: read
       contents: read
     concurrency:
-      group: alpha-bridge-inputs-1be4d350dfa48136-${{ github.workflow }}-${{ 
+      group: alpha-bridge-inputs-79967559e6c019b6-${{ github.workflow }}-${{ 
         github.sha }}-${{ github.event.schedule || github.event_name }}
       cancel-in-progress: false
       queue: max
@@ -69,15 +53,12 @@ jobs:
         GH_TOKEN: ${{ github.token }}
         AB_REPOSITORY: ${{ github.repository }}
         AB_RUN_ID: ${{ github.run_id }}
-        AB_HEAD_SHA: ${{ (github.event_name == 'schedule' || github.event_name 
-          == 'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
-          github.sha }}
-        AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
-          'workflow_run') && 'refs/heads/master' || github.ref }}
+        AB_HEAD_SHA: ${{ github.sha }}
+        AB_REF: ${{ github.ref }}
         AB_WORKFLOW_DIGEST: 
-          af28ae6b7ecf2c6e87a10bea255e73451fc6e55b14325aca8fd877696e6daf64
-        AB_EVENT: ${{ github.event_name }}
-        AB_SCHEDULE: ${{ github.event.schedule || '' }}
+          da42b5e8e4de13349adbc0bc1442cb7a49a0e171f5b8563844319176d623a868
+        AB_EVENT: schedule
+        AB_SCHEDULE: alpha-bridge verification
         AB_VARIABLES: ${{ toJSON(vars) }}
         AB_INPUTS: ${{ toJSON(inputs) }}
         AB_DEFAULT_PERMISSIONS: write

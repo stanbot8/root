@@ -1,103 +1,84 @@
-name: 'Update Homebrew Macs'
+name: 'ROOT Release Notes'
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
-      python_version:
-        description: 'Python version to use for the virtual environment'
+      branch:
         type: string
         required: true
-        default: 3.12
-
-  push:
-    branches:
-      - 'master'
-    paths:
-      - '.github/workflow/update-brew-macs.yml'
-
-env:
-  VENV_DIR: ${{ github.workspace }}/ROOT_CI_VENV
+    secrets:
+      RWEBEOS_KT:
+        required: true
+      KRB5REALM:
+        required: true
+      KRB5USER:
+        required: true
 
 jobs:
-  update-macos:
-    if: |-
-      ${{ (github.repository_owner == 'root-project') && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
-
-
-    permissions:
-      contents: read
-
-    # Use login shells to have brew and java available
-    defaults:
-      run:
-        shell: bash -leo pipefail {0}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        runner-label: [experimental-brew-ci, experimental-brew-ci-2]
-
-    runs-on:
-      - 'self-hosted'
-      - ${{ matrix.runner-label }}
-
-    name: Update homebrew and Python
-
+  create_release_notes:
+    runs-on: ubuntu-latest
     env:
-      PYTHON_PACKAGE_BREW: ${{ format('python@{0}', inputs.python_version != '' 
-        && inputs.python_version || 3.12 ) }}
-      PYTHON_EXECUTABLE: ${{ format('python{0}', inputs.python_version != '' && 
-        inputs.python_version || 3.12 ) }}
-      OPENJDK_PACKAGE_BREW: openjdk@17
-
+      WORKDIR: /home/runner/work/root
     steps:
       - name: Checkout
         uses: actions/checkout@v6
         with:
-          path: src/
+          ref: ${{ inputs.branch }}
 
-          ref: ${{ (github.event_name == 'schedule' || github.event_name == 
-            'workflow_run') && '51cc43982d4813e312ee0d7ea6422d91d66f482d' || 
-            github.sha }}
-      - name: Update brew packages
-        run: |
-          brew update
-          brew install ca-certificates ccache googletest "${OPENJDK_PACKAGE_BREW}" pyenv "${PYTHON_PACKAGE_BREW}"
-          echo "Installing official brew deps: $(brew deps --direct --include-build root)"
-          brew install $(brew deps --direct --include-build root)
+      - name: Set up Python
+        uses: actions/setup-python@v5
 
-      - name: Run brew cleanup
+      - name: Install Kerberos utilities
         run: |-
-          brew cleanup --prune=7
+          sudo apt-get install -y krb5-user
 
 
-      - name: Display software versions
-        run: |
-          java --version || { echo "Probably missing the homebrew link for openjdk: sudo ln -sfn $(brew --prefix "${OPENJDK_PACKAGE_BREW}")/libexec/openjdk.jdk /Library/Java/JavaVirtualMachines/openjdk.jdk"; false; }
-          cmake --version || { echo "Error when checking for cmake"; false; }
-          which "${PYTHON_EXECUTABLE}"
-          "${PYTHON_EXECUTABLE}" --version
-
-      - name: Recreate Python venv
-        run: |
-          rm -rf ${VENV_DIR}
-          $(brew --prefix "${PYTHON_PACKAGE_BREW}")/bin/${PYTHON_EXECUTABLE} -m venv "${VENV_DIR}"
-          source "${VENV_DIR}"/bin/activate
-          pip3 install --upgrade pip
-          while read -r PACKAGE; do
-            PACKAGE="${PACKAGE%%#*}" # Skip comments
-            if [ -n "${PACKAGE}" ]; then
-              pip3 --no-cache-dir install -U "${PACKAGE}" || echo "::error file=update-brew-macs.yml::Could not install package ${PACKAGE}"
-            fi
-          done < ${{ github.workspace }}/src/requirements.txt
-
-      - name: Purge pip cache
+      - name: Install XRootD client
         run: |-
-          ${VENV_DIR}/bin/pip3 cache purge
+          sudo apt-get -y install xrootd-client
 
 
+      - name: Setup Pandoc
+        run: |-
+          sudo apt-get -y install pandoc
+
+
+      - name: Download Release Notes creation script
+        working-directory: ${{ env.WORKDIR }}
+        run: |-
+          wget https://raw.githubusercontent.com/root-project/rootspi/refs/heads/master/rdoc/relnotes_gh.py
+
+
+      - name: Create Release Notes
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          echo +++ Running the command
+          python relnotes_gh.py root ${{ inputs.branch }}
+          echo +++ New Content
+          ls
+
+      - name: Sync documentation to EOS
+        env:
+          RWEBEOS_KT: ${{ secrets.RWEBEOS_KT }}
+          KT_FILE_NAME: /tmp/decoded.keytab
+          EOS_PATH: /eos/project/r/root-eos/website/doc
+          EOS_ENDPOINT: root://eosproject-r.cern.ch
+          KRB5CCNAME: /tmp/krb5cc
+        working-directory: ${{ env.WORKDIR }}
+        run: |
+          echo +++ Content
+          ls
+          echo +++ Retrieving the secret
+          echo ${RWEBEOS_KT} | base64 -d > ${KT_FILE_NAME}
+          echo +++ Creating the token
+          kinit  -p ${{ secrets.KRB5USER }}@${{ secrets.KRB5REALM }} -kt ${KT_FILE_NAME}
+          echo +++ Running the copy
+          export DIRNAME=`ls -1|grep -v relnotes|grep -v root`
+          xrdcp -rf ${DIRNAME} ${EOS_ENDPOINT}/${EOS_PATH}/
     needs:
       - alpha_bridge_inputs
+    if: |-
+      ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
   alpha_bridge_inputs:
     name: CI input check
     runs-on: ubuntu-latest
@@ -105,7 +86,7 @@ jobs:
       actions: read
       contents: read
     concurrency:
-      group: alpha-bridge-inputs-216a719e39ec1b50-${{ github.workflow }}-${{ 
+      group: alpha-bridge-inputs-9af43334bb73a507-${{ github.workflow }}-${{ 
         github.sha }}-${{ github.event.schedule || github.event_name }}
       cancel-in-progress: false
       queue: max
@@ -124,7 +105,7 @@ jobs:
           AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
             'workflow_run') && 'refs/heads/master' || github.ref }}
           AB_WORKFLOW_DIGEST: 
-            aa11e91638eb912f9a95f32e476db3794fcf30bcd8c42ae006581819d224f66f
+            3789b903b0124ed3c3ec9d633035f26b94213c706fa543934b8a0d6977dcbaf5
           AB_EVENT: ${{ github.event_name }}
           AB_SCHEDULE: ${{ github.event.schedule || '' }}
           AB_VARIABLES: ${{ toJSON(vars) }}
