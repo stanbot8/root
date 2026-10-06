@@ -1,12 +1,12 @@
-name: ROOT Nightlies for Active Releases
+name: 'ROOT Nightlies for Active Releases'
 
 on:
   schedule:
-  - cron: 15 1 * * *
+  - cron: '15 1 * * *'
   workflow_dispatch:
     inputs:
       incremental:
-        description: Do incremental build
+        description: 'Do incremental build'
         type: boolean
         required: true
         default: true
@@ -32,16 +32,16 @@ jobs:
     secrets: inherit
     needs:
     - alpha_bridge_inputs
-    if: ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' 
-      }}
+    if: |-
+      ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
   Nightly-6_36:
     uses: root-project/root/.github/workflows/root-ci.yml@v6-36-00-patches
     secrets: inherit
 
     needs:
     - alpha_bridge_inputs
-    if: ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' 
-      }}
+    if: |-
+      ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
   alpha_bridge_inputs:
     name: CI input check
     runs-on: ubuntu-latest
@@ -67,7 +67,7 @@ jobs:
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          9759fea1e7f079feb83e10233437f2ceb127837ea52a6abb9201a7e0eb1b3cb1
+          8b4ef65b5ca911c4157ef31f2db19a0c5d4fb63aa5b6a9d079d9119e9e1b34c2
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

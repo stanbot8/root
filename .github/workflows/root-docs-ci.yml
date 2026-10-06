@@ -1,4 +1,4 @@
-name: ROOT Docs CI
+name: 'ROOT Docs CI'
 
 on:
 
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       incremental:
-        description: Do full build
+        description: 'Do full build'
         type: boolean
         required: false
         default: false
@@ -25,8 +25,9 @@ on:
 
 jobs:
   build-docs:
-    if: ${{ (github.repository_owner == 'root-project') && 
-      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    if: |-
+      ${{ (github.repository_owner == 'root-project') && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+
 
     runs-on:
     - self-hosted
@@ -46,16 +47,16 @@ jobs:
 
     container:
       image: registry.cern.ch/root-ci/alma9:buildready
-      options: --security-opt label=disable --rm
+      options: '--security-opt label=disable --rm'
       env:
-        OS_APPLICATION_CREDENTIAL_ID: 7f5b64a265244623a3a933308569bdba
+        OS_APPLICATION_CREDENTIAL_ID: '7f5b64a265244623a3a933308569bdba'
         OS_APPLICATION_CREDENTIAL_SECRET: ${{ 
           secrets.OS_APPLICATION_CREDENTIAL_SECRET }}
-        OS_AUTH_TYPE: v3applicationcredential
-        OS_AUTH_URL: https://keystone.cern.ch/v3
+        OS_AUTH_TYPE: 'v3applicationcredential'
+        OS_AUTH_URL: 'https://keystone.cern.ch/v3'
         OS_IDENTITY_API_VERSION: 3
-        OS_INTERFACE: public
-        OS_REGION_NAME: cern
+        OS_INTERFACE: 'public'
+        OS_REGION_NAME: 'cern'
         PYTHONUNBUFFERED: true
 
     steps:
@@ -102,8 +103,8 @@ jobs:
 
     - name: Apply option overrides
       env:
-        OVERRIDES: testing=Off roottest=Off
-        CONFIGFILE: .github/workflows/root-ci-config/buildconfig/alma9.txt
+        OVERRIDES: "testing=Off roottest=Off"
+        CONFIGFILE: '.github/workflows/root-ci-config/buildconfig/alma9.txt'
       shell: bash
       run: |
         set -x
@@ -233,7 +234,7 @@ jobs:
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          48b25f80878416f7e51203d264d94a8dcc5627c3efae6be0ca0996acfe4b576b
+          6881edd6ea727b0efca9ee7dab301ecb3bd59eb2d39bce93c1349c186db2ed09
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

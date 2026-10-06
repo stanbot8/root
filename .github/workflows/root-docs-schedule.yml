@@ -1,30 +1,30 @@
-name: ROOT Docs Nightlies
+name: 'ROOT Docs Nightlies'
 
 on:
   schedule:
-  - cron: 20 1 * * *
-  - cron: 55 11 * * 1-5
+  - cron: '20 1 * * *'
+  - cron: '55 11 * * 1-5'
 
 jobs:
   Docs_6-32:
-    if: ${{ (github.event.schedule == '20 1 * * *') && 
-      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    if: |-
+      ${{ (github.event.schedule == '20 1 * * *') && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
     uses: root-project/root/.github/workflows/root-docs-ci.yml@v6-32-00-patches
     secrets: inherit
 
     needs:
     - alpha_bridge_inputs
   Docs_6-36:
-    if: ${{ (github.event.schedule == '20 1 * * *') && 
-      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    if: |-
+      ${{ (github.event.schedule == '20 1 * * *') && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
     uses: root-project/root/.github/workflows/root-docs-ci.yml@v6-36-00-patches
     secrets: inherit
 
     needs:
     - alpha_bridge_inputs
   Docs_6-40:
-    if: ${{ (github.event.schedule == '20 1 * * *') && 
-      needs.alpha_bridge_inputs.outputs.changed == 'true' }}
+    if: |-
+      ${{ (github.event.schedule == '20 1 * * *') && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
     uses: root-project/root/.github/workflows/root-docs-ci.yml@v6-40-00-patches
     secrets: inherit
 
@@ -36,8 +36,8 @@ jobs:
     secrets: inherit
     needs:
     - alpha_bridge_inputs
-    if: ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' 
-      }}
+    if: |-
+      ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
   alpha_bridge_inputs:
     name: CI input check
     runs-on: ubuntu-latest
@@ -63,7 +63,7 @@ jobs:
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          dd811d6bcd07b995df06d75668dd35f69b406869a6fe2e9d08b087a740814e5b
+          0ccdd81c7a52d87ca4f01843ebb571650886c0873b52acefa9bcdded23ef9275
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

@@ -71,16 +71,16 @@ jobs:
 
     container:
       image: registry.cern.ch/root-ci/alma10:buildready
-      options: --security-opt label=disable --rm
+      options: '--security-opt label=disable --rm'
       env:
-        OS_APPLICATION_CREDENTIAL_ID: 7f5b64a265244623a3a933308569bdba
+        OS_APPLICATION_CREDENTIAL_ID: '7f5b64a265244623a3a933308569bdba'
         OS_APPLICATION_CREDENTIAL_SECRET: ${{ 
           secrets.OS_APPLICATION_CREDENTIAL_SECRET }}
-        OS_AUTH_TYPE: v3applicationcredential
-        OS_AUTH_URL: https://keystone.cern.ch/v3
+        OS_AUTH_TYPE: 'v3applicationcredential'
+        OS_AUTH_URL: 'https://keystone.cern.ch/v3'
         OS_IDENTITY_API_VERSION: 3
-        OS_INTERFACE: public
-        OS_REGION_NAME: cern
+        OS_INTERFACE: 'public'
+        OS_REGION_NAME: 'cern'
         PYTHONUNBUFFERED: true
 
     env:
@@ -135,8 +135,8 @@ jobs:
     - name: Install ruff
       uses: astral-sh/ruff-action@v3
       with:
-        version: latest
-        args: --version
+        version: "latest"
+        args: "--version"
 
     - name: Lint code
       run: |
@@ -203,7 +203,7 @@ jobs:
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          32aac643449dfea5beef6115bf1d9e763cdf26134c42752e311a8b0813e89f66
+          941f948a1dddcb19a661c42719f385eab3a946d074f02ab27fc336f692178338
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}

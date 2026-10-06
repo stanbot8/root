@@ -1,13 +1,13 @@
-name: ROOT Main
+name: 'ROOT Main'
 
 on:
   schedule:
-  - cron: 0 1 * * *
+  - cron: '0 1 * * *'
 
   workflow_dispatch:
     inputs:
       incremental:
-        description: Do incremental build
+        description: 'Do incremental build'
         type: boolean
         required: true
         default: true
@@ -33,8 +33,8 @@ jobs:
     secrets: inherit
     needs:
     - alpha_bridge_inputs
-    if: ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' 
-      }}
+    if: |-
+      ${{ (success()) && needs.alpha_bridge_inputs.outputs.changed == 'true' }}
   alpha_bridge_inputs:
     name: CI input check
     runs-on: ubuntu-latest
@@ -60,7 +60,7 @@ jobs:
         AB_REF: ${{ (github.event_name == 'schedule' || github.event_name == 
           'workflow_run') && 'refs/heads/master' || github.ref }}
         AB_WORKFLOW_DIGEST: 
-          558d2ba712114bfe751604f902e45cf9adbd451305ec172795a9ba8eced65fee
+          b762672dcde50ef7aa963d2b33d78887e3ad84c7d10f53ac08fb425225248c7e
         AB_EVENT: ${{ github.event_name }}
         AB_SCHEDULE: ${{ github.event.schedule || '' }}
         AB_VARIABLES: ${{ toJSON(vars) }}
